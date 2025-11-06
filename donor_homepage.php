@@ -1,3 +1,9 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) { header("Location: homepage.html"); exit(); }
+$userName = $_SESSION['user_name'];
+$initial = strtoupper($userName[0]);
+?>
 <!doctype html>
 <html lang="en">
 <head>
