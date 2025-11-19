@@ -1,3 +1,12 @@
+<?php
+// donor_login.php - Donor Login Form
+session_start();
+// Redirect already logged-in users
+if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'donor') { 
+    header("Location: donor_homepage.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,19 +61,11 @@
             margin-bottom: 30px;
         }
 
-        .logo-icon {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 50px;
-            height: 50px;
-            background-color: var(--primary-green);
-            border-radius: 10px;
-            font-size: 1.5em;
-            font-weight: 700;
-            color: var(--light-green);
-            margin-bottom: 5px;
+         .logo-icon img{
+            width:50px;
+            height:auto;
         }
+
 
         .app-name {
             font-size: 1.2em;
@@ -92,7 +93,7 @@
             padding: 12px;
             border: none;
             border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.9); 
             color: #333;
             font-size: 1em;
             transition: background-color 0.3s;
@@ -151,7 +152,7 @@
 <body>
     <div class="login-container">
         <div class="logo-area">
-            <div class="logo-icon">SA</div>
+            <div class="logo-icon"><img src="images/circle-logo.png"></div>
             <div class="app-name">Smart Aid</div>
             <h2>Donor Login</h2>
         </div>
@@ -167,12 +168,16 @@
                 <input type="password" id="password" name="password" required placeholder="Enter your password">
             </div>
             
-            <input type="hidden" name="role" value="donor"> <button type="submit" class="log-in-btn">Log In</button>
+            <!-- SYNTAX FIXED HERE -->
+            <input type="hidden" name="role" value="donor"> 
+            <button type="submit" class="log-in-btn">Log In</button>
         </form>
 
         <div class="links">
-            <a href="#">Forgot Password?</a>
-            <a href="donor_signup.html">New Donor? Sign Up</a>
+            <!-- LINK FIXED to forgot_password.php -->
+            <a href="forgot_password.php">Forgot Password?</a> 
+            <!-- LINK FIXED to donor_signup.php -->
+            <a href="donor_signup.php">New Donor? Sign Up</a>
         </div>
     </div>
 </body>

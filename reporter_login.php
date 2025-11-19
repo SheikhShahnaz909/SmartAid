@@ -52,19 +52,11 @@
             margin-bottom: 30px;
         }
 
-        .logo-icon {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 50px;
-            height: 50px;
-            background-color: var(--primary-green);
-            border-radius: 10px;
-            font-size: 1.5em;
-            font-weight: 700;
-            color: var(--light-green);
-            margin-bottom: 5px;
+         .logo-icon img{
+            width:50px;
+            height:auto;
         }
+
 
         .app-name {
             font-size: 1.2em;
@@ -151,7 +143,7 @@
 <body>
     <div class="login-container">
         <div class="logo-area">
-            <div class="logo-icon">SA</div>
+            <div class="logo-icon"><img src="images/circle-logo.png"></div>
             <div class="app-name">Smart Aid</div>
             <h2>Reporter Login</h2>
         </div>

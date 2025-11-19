@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Smart Aid: real-time community donation platform</title>
   <style>
+    /* [CSS styles remain the same as the original file] */
     :root{
       --green-900: #114b2b;
       --green-700: #185e34;
@@ -16,9 +17,9 @@
       --radius: 12px;
       --max-width: 1100px;
       --glass: rgba(255,255,255,0.7);
-      --footer-bg: #114b2b; /* Dark green for footer */
-      --footer-text: #eaf8ef; /* Light text for footer */
-      --orange-accent: #f99d3d; /* Orange color for the very bottom strip */
+      --footer-bg: #114b2b;
+      --footer-text: #eaf8ef;
+      --orange-accent: #f99d3d;
     }
 
     *{box-sizing:border-box}
@@ -32,14 +33,12 @@
       line-height:1.45;
     }
 
-    /* Container */
     .wrap{
       max-width:var(--max-width);
       margin:36px auto;
       padding:24px;
     }
 
-    /* --- Existing Header/Body Styles (from uploaded image) --- */
     header.main-header{
       display:flex;
       align-items:center;
@@ -84,7 +83,6 @@
       padding:10px 14px;
       box-shadow: 0 6px 18px rgba(30,122,67,0.18);
     }
-
     /* Hero */
     .hero{
       margin-top:18px;
@@ -169,8 +167,6 @@
     .logo-img{
       width:50px;
       height:50px;
- 
-      
     }
 
     /* Info strip */
@@ -185,21 +181,17 @@
       justify-content:space-between;
       box-shadow: var(--card-shadow);
     }
-
-    /* --- Footer Styles (based on second uploaded image, modified) --- */
-
+    /* Footer Styles */
     .footer-container{
-        margin-top:60px; /* Space between body content and footer */
+        margin-top:60px;
         background: var(--footer-bg);
         color: var(--footer-text);
         border-radius: var(--radius);
         box-shadow: 0 10px 30px rgba(8,40,20,0.15);
         position: relative;
     }
-
-    /* Main Footer Content */
     .footer-content {
-        padding: 40px 40px 30px 40px; /* Reduced top padding as the nav bar is removed */
+        padding: 40px 40px 30px 40px;
         display: grid;
         grid-template-columns: 2.5fr 1fr 1fr;
         gap: 40px;
@@ -207,7 +199,6 @@
         max-width: var(--max-width);
         margin: 0 auto;
     }
-
     .footer-left h4{
         margin: 0 0 10px 0;
         display: flex;
@@ -217,20 +208,17 @@
         font-weight: 800;
         color: var(--footer-text);
     }
-
     .footer-left p{
         opacity: 0.8;
         line-height: 1.6;
         margin-top: 10px;
         max-width: 350px;
     }
-
     .footer-left .social-icons{
         margin-top: 20px;
         display: flex;
         gap: 15px;
     }
-
     .footer-left .social-icons a{
         color: var(--footer-text);
         opacity: 0.8;
@@ -238,11 +226,9 @@
         transition: opacity 0.2s;
         text-decoration: none;
     }
-
     .footer-left .social-icons a:hover{
         opacity: 1;
     }
-
     .back-to-top-btn{
         margin-top: 25px;
         padding: 10px 18px;
@@ -257,28 +243,23 @@
         font-size: 13px;
         transition: background 0.2s;
     }
-
     .back-to-top-btn:hover{
         background: rgba(255,255,255,0.1);
     }
-
     .footer-links div h5{
         margin: 0 0 15px 0;
         font-size: 16px;
         font-weight: 700;
         color: var(--footer-text);
     }
-
     .footer-links ul{
         list-style: none;
         padding: 0;
         margin: 0;
     }
-
     .footer-links li{
         margin-bottom: 8px;
     }
-
     .footer-links li a{
         color: var(--footer-text);
         opacity: 0.8;
@@ -286,12 +267,10 @@
         font-size: 14px;
         transition: opacity 0.2s;
     }
-
     .footer-links li a:hover{
         opacity: 1;
         text-decoration: underline;
     }
-
     .footer-bottom-strip{
         background: var(--orange-accent);
         text-align: center;
@@ -303,7 +282,6 @@
         font-weight: 600;
     }
 
-    /* Responsive adjustments for footer */
     @media (max-width: 900px) {
       .footer-content {
           grid-template-columns: 1fr;
@@ -315,7 +293,7 @@
 <body>
   <div class="wrap">
     <header class="main-header">
-      <a class="brand" href="#" aria-label="Smart Aid Home">
+      <a class="brand" href="homepage.html" aria-label="Smart Aid Home">
              <div class="logo-img"> <img src="images/circle-logo.png" alt="Smart Aid Logo" class="logo-img" />
   </div>
         <div>
@@ -325,8 +303,9 @@
       </a>
 
       <nav class="main-nav" aria-label="Primary navigation">
-        <a href="#leaderboard">Leaderboard</a>
-        <a href="#help">Help</a>
+        <!-- LINK FIXED -->
+        <a href="leaderboard.php">Leaderboard</a>
+        <a href="help.html">Help</a>
         
         <a class="cta" href="role_selection.html">Sign Up</a>
       </nav>
@@ -341,62 +320,7 @@
         </div>
       </section>
 
-      <section class="features" aria-label="Core actions">
-        <article id="find" class="card" role="region" aria-labelledby="find-title">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="icon find" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M21 21l-4.35-4.35" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="11" cy="11" r="6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <h3 id="find-title">Find Food</h3>
-          </div>
-          <p>Search for available food donations near your area.</p>
-
-          <div class="foot">
-            <a class="small-btn" href="#find">Search Now</a>
-          </div>
-        </article>
-
-        <article id="report" class="card" role="region" aria-labelledby="offer-title">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="icon offer" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M3 12h18" stroke="white" stroke-width="2" stroke-linecap="round"></path>
-                <path d="M6 7l6-4 6 4" stroke="white" stroke-width="2" stroke-linecap="round"></path>
-              </svg>
-            </div>
-            <h3 id="report-title">Report</h3>
-          </div>
-          <p>Pedestrians can report anyone in need or food that could be redistributed.</p>
-
-          <div class="foot">
-            <a class="small-btn" href="#report">Report Now</a>
-          </div>
-        </article>
-
-        <article id="donate" class="card" role="region" aria-labelledby="donate-title">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="icon donate" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" aria-hidden="true">
-                <path d="M12 21V10" stroke-width="2" stroke-linecap="round"></path>
-                <path d="M7 10l5-5 5 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <h3 id="donate-title">Donate </h3>
-          </div>
-          <p>Donate leftover or extra food directly to people in need.</p>
-
-          <div class="foot">
-            <a class="small-btn" href="#donate">Donate Now</a>
-          </div>
-        </article>
-      </section>
-
       
-    </main>
-  </div>
 
   <footer class="footer-container">
     
@@ -429,13 +353,13 @@
             <div>
                 <h5>Site Map</h5>
                 <ul>
-                    <li><a href="#">Homepage</a></li>
-                    <li><a href="#">Leaderboard</a></li>
-                    <li><a href="#">How It Works</a></li>
-                    <li><a href="#">News & Updates</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Contact Us</a></li>
-                    <li><a href="#">Portal</a></li>
+                    <li><a href="homepage.html">Homepage</a></li>
+                    <li><a href="leaderboard.php">Leaderboard</a></li>
+                    <li><a href="how-it-works.html">How It Works</a></li>
+                    <li><a href="#news">News & Updates</a></li>
+                    <li><a href="#careers">Careers</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><a href="role_selection.php">Portal</a></li>
                 </ul>
             </div>
         </div>
@@ -444,10 +368,10 @@
             <div>
                 <h5>Legal</h5>
                 <ul>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Services</a></li>
-                    <li><a href="#">Security</a></li>
-                    <li><a href="#">Legal Disclosure</a></li>
+                    <li><a href="#privacy">Privacy Policy</a></li>
+                    <li><a href="#terms">Terms of Services</a></li>
+                    <li><a href="#security">Security</a></li>
+                    <li><a href="#disclosure">Legal Disclosure</a></li>
 
                 </ul>
             </div>

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Aid — Help</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+  <style>
+    :root{
+      --accent-dark: #114b2b;
+      --accent-mid: #1c6f45;
+      --glass: rgba(255,255,255,0.12);
+      --glass-strong: rgba(255,255,255,0.20);
+      --card-radius: 14px;
+      --max-width: 1100px;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html, body {
+    height: auto;
+    min-height: 100%;
+}
+
+    body{
+    font-family:'Poppins',sans-serif;
+    background: url('images/signin-background.jpeg') center/cover no-repeat fixed;
+    color: #fff;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px;
+}
+
+    .wrap{
+      width:100%;
+      max-width:var(--max-width);
+      background: linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.42));
+      border-radius:20px;
+      padding:28px;
+      box-shadow: 0 18px 50px rgba(2,20,10,0.45);
+      backdrop-filter: blur(6px);
+      margin: 24px 0;
+    }
+
+    header{
+      display:flex;
+      gap:18px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .logo {
+      width:72px;
+      height:72px;
+      border-radius:50%;
+      overflow:hidden;
+      flex:0 0 72px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      background:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .logo img{ width:100%; height:100%; object-fit:cover; display:block }
+
+    .brand {
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .brand .name{ font-weight:800; font-size:1.15rem; color:#eaffef }
+    .brand .tag{ font-size:0.9rem; color:rgba(230,255,235,0.9) }
+
+    nav.breadcrumbs{
+      margin-left:auto;
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    nav.breadcrumbs a{ color:#e6ffe6; text-decoration:none; font-weight:600; opacity:0.95 }
+    nav.breadcrumbs a:hover{ text-decoration:underline }
+
+    main{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:22px;
+      margin-top:6px;
+    }
+
+    /* Left column - content */
+    .content{
+      background: var(--glass);
+      border-radius: var(--card-radius);
+      padding:20px;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .section-title h2{ font-size:1.15rem; color:#f4fff4; margin:0 }
+
+    .faq{
+      margin-bottom:18px;
+    }
+    .faq-item{
+      margin-bottom:10px;
+      border-radius:10px;
+      padding:12px;
+      background: rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .faq-item summary{
+      list-style:none;
+      cursor:pointer;
+      font-weight:700;
+      color:#f8fff8;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .faq-item details[open] summary{ color:#eaffea }
+    .faq-item p{ margin-top:8px; color:rgba(240,255,240,0.92); line-height:1.5; font-size:0.98rem }
+
+    /* Right column - quick help card */
+    .help-card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+      border-radius: var(--card-radius);
+      padding:18px;
+      border:1px solid rgba(255,255,255,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .help-card h3{ margin:0; font-size:1.05rem; color:#eaffea }
+    .help-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px }
+    .help-list a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      text-decoration:none;
+      color: #fff;
+      border-radius:10px;
+      background: rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+      transition: transform .14s ease, background .14s ease;
+    }
+    .help-list a:hover{ transform: translateY(-4px); background: rgba(255,255,255,0.06) }
+    .help-list .mi{ font-size:22px; color:#dfffe0 }
+
+    .contact-row{ margin-top:8px; display:flex; gap:8px; align-items:center }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:10px;
+      background: linear-gradient(180deg,var(--accent-mid),var(--accent-dark));
+      color:#fff;
+      text-decoration:none;
+      font-weight:700;
+      border: none;
+      cursor:pointer;
+      box-shadow: 0 8px 20px rgba(10,60,28,0.28);
+    }
+    .btn.secondary{
+      background: rgba(255,255,255,0.06);
+      color:#eaffea;
+      border:1px solid rgba(255,255,255,0.04);
+      box-shadow:none;
+    }
+
+    .small-note{ font-size:0.9rem; color:rgba(235,255,235,0.85) }
+
+    footer{
+      margin-top:18px;
+      text-align:center;
+      color:rgba(220,255,220,0.85);
+      font-size:0.92rem;
+    }
+
+    /* Responsive */
+    @media (max-width:980px){
+      main{ grid-template-columns: 1fr; }
+      nav.breadcrumbs{ display:none }
+    }
+    @media (max-width:520px){
+      .wrap{ padding:18px }
+      .logo{ width:60px; height:60px }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="region" aria-label="Help and support for Smart Aid">
+    <header>
+      <div class="logo" aria-hidden="true">
+        <img src="images/circle-logo.png" alt="Smart Aid logo">
+      </div>
+
+      <div class="brand">
+        <div class="name">SMART AID</div>
+        <div class="tag">Real-Time Community Donation</div>
+      </div>
+
+    
+    </header>
+
+    <main>
+      <!-- Left content -->
+      <section class="content" aria-labelledby="help-heading">
+        <div class="section-title">
+          <h2 id="help-heading">Help & Frequently Asked Questions</h2>
+        </div>
+
+        <!-- Getting started -->
+        <div class="faq" aria-labelledby="getting-started">
+          <div style="margin-bottom:8px;">
+            <strong id="getting-started" style="color:#eaffea">Getting started</strong>
+            <p class="small-note" style="margin-top:6px">Quick guides to help you begin using Smart Aid.</p>
+          </div>
+
+          <details class="faq-item" open>
+            <summary>How do I sign up as a Donor?</summary>
+            <p>Click <strong>Donor</strong> on the role selection page, then fill out the sign-up form with your name, contact, and donor preferences. After signing up you can post donations that nearby volunteers can accept.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>How do I report someone in need?</summary>
+            <p>Choose "Reporter / Community Leader" from the role selection page, sign up and verify your contact. Use the "Report Donation" or "Report Need" form on your dashboard to submit location, description, and any photos. Our system will match nearby donors.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>What can I donate?</summary>
+            <p>Common donations include surplus cooked food (properly sealed), packaged groceries, clothing, blankets, and small household items. Avoid expired food or unsafe items. For large/complex donations, contact support to coordinate pickup.</p>
+          </details>
+        </div>
+
+        <!-- Safety & verification -->
+        <div class="faq" aria-labelledby="safety">
+          <div style="margin-bottom:8px;">
+            <strong id="safety" style="color:#eaffea">Safety & Verification</strong>
+            <p class="small-note" style="margin-top:6px">Guidelines to keep donations safe and trustworthy.</p>
+          </div>
+
+          <details class="faq-item">
+            <summary>How does verification work?</summary>
+            <p>We encourage reporters and donors to verify contact details (phone/email). For trusted community leaders, we may run additional checks. Always meet in public places when possible and document items with clear photos.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Are donated food items checked for safety?</summary>
+            <p>Smart Aid provides guidance only. Donors should ensure food is safe, properly packaged, and within recommended storage times. If you're unsure, mark the donation clearly or contact support for advice.</p>
+          </details>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="faq" aria-labelledby="troubleshoot">
+          <div style="margin-bottom:8px;">
+            <strong id="troubleshoot" style="color:#eaffea">Troubleshooting</strong>
+            <p class="small-note" style="margin-top:6px">Common technical issues and solutions.</p>
+          </div>
+
+          <details class="faq-item">
+            <summary>I can't log in — what should I do?</summary>
+            <p>Try resetting your password via the login page. If you don't receive the reset email, check spam/junk folders. Still stuck? Contact support with your registered email and a brief description.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>My location isn't accurate on reports.</summary>
+            <p>Make sure your device's location services are enabled and the browser has permission to access location. You can also manually type an address when reporting a need.</p>
+          </details>
+        </div>
+
+        <footer>
+          <small>Can't find an answer? Use the contact options on the right, or email <strong>support@smart-aid.example</strong> (replace with your real support address).</small>
+        </footer>
+      </section>
+
+      <!-- Right help column -->
+      <aside class="help-card" aria-labelledby="quick-help">
+        <h3 id="quick-help">Quick Help</h3>
+
+        <div class="help-list" role="list">
+          <a href="donor_signup.php" role="listitem" title="Sign up as donor">
+            <span class="mi material-icons-outlined">volunteer_activism</span>
+            <div>
+              <div style="font-weight:700">Sign up as Donor</div>
+              <div style="font-size:0.9rem; opacity:0.9">Post donations quickly</div>
+            </div>
+          </a>
+
+          <a href="reporter_signup.php" role="listitem" title="Sign up as reporter">
+            <span class="mi material-icons-outlined">campaign</span>
+            <div>
+              <div style="font-weight:700">Sign up as Reporter</div>
+              <div style="font-size:0.9rem; opacity:0.9">Report communities in need</div>
+            </div>
+          </a>
+
+          <a href="report_donation.php" role="listitem" title="Report a need">
+            <span class="mi material-icons-outlined">report_problem</span>
+            <div>
+              <div style="font-weight:700">Report a Need</div>
+              <div style="font-size:0.9rem; opacity:0.9">Submit a new request</div>
+            </div>
+          </a>
+        </div>
+
+        <div style="height:1px; background:rgba(255,255,255,0.04); margin:10px 0; border-radius:2px"></div>
+
+        <div>
+          <div style="font-weight:700">Contact Support</div>
+          <p class="small-note" style="margin-top:6px">If you need personal help, use email or call us.</p>
+
+          <div class="contact-row">
+            <!-- mailto should be replaced with your actual support email -->
+            <a class="btn" href="mailto:support@smart-aid.example?subject=Smart%20Aid%20Support%20Request" title="Email support">
+              <span class="material-icons-outlined">mail</span> Email Support
+            </a>
+
+            
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div style="font-weight:700; margin-bottom:6px">Guides</div>
+          <a class="btn secondary" style="display:inline-flex; text-decoration:none" href="homepage.html" title="Back to homepage">
+            <span class="material-icons-outlined">home</span> Back to Home
+          </a>
+        </div>
+      </aside>
+    </main>
+  </div>
+</body>
+</html>

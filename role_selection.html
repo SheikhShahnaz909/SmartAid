@@ -6,27 +6,22 @@
     <title>Smart Aid - Choose Your Role</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
-    
     <style>
-        /* CSS variables adopted from homepage.html */
+        /* [CSS styles remain the same as the original file] */
         :root {
-            --green-900: #114b2b; /* Darkest green (Text/Primary) */
-            --green-700: #185e34; /* Dark green (Buttons/Accent) */
-            --green-500: #37a264; /* Mid green */
-            --green-300: #9be0b5; /* Light green/Accent background */
-            --accent: #1e7a43;    /* Another accent green */
-            
-            /* Backgrounds and Overlays */
-            --bg-start: #eaf8ef; /* Very light green top background (from body) */
-            --bg-end: #f7fff9;   /* Near white bottom background (from body) */
-            --box-bg-color: rgba(155, 224, 181, 0.7); /* Transparent green box (using --green-300) */
-            --box-border-color: rgba(255, 255, 255, 0.6); /* White border for glass effect */
-            
-            /* Text and Shadows */
-            --dark-text: var(--green-900); /* Dark text for readability on light backgrounds */
-            --light-text: #204d34;        /* Lighter text for descriptions */
-            --card-shadow: 0 6px 20px rgba(8,40,20,0.08); /* Shadow from homepage */
-            --heavy-shadow: 0 10px 30px rgba(30,122,67,0.25); /* Deeper green shadow */
+            --green-900: #114b2b;
+            --green-700: #185e34;
+            --green-500: #37a264;
+            --green-300: #9be0b5;
+            --accent: #1e7a43;
+            --bg-start: #eaf8ef;
+            --bg-end: #f7fff9;
+            --box-bg-color: rgba(155, 224, 181, 0.7);
+            --box-border-color: rgba(255, 255, 255, 0.6);
+            --dark-text: var(--green-900);
+            --light-text: #204d34;
+            --card-shadow: 0 6px 20px rgba(8,40,20,0.08);
+            --heavy-shadow: 0 10px 30px rgba(30,122,67,0.25);
         }
 
         * {
@@ -37,7 +32,6 @@
         }
 
         body {
-            /* White/Light Green Gradient Background from homepage.html */
             background-image: url(images/signin-background.jpeg);
             background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
             color: var(--dark-text);
@@ -49,39 +43,34 @@
 
         .container {
             width: 90%;
-            max-width: 750px; 
+            max-width: 750px;
             padding: 50px;
             border-radius: 20px;
-            /* **Green Box Background with Glass Effect** */
-            background: var(--box-bg-color); /* Transparent Light Green */
-            backdrop-filter: blur(10px); 
-            border: 1px solid var(--box-border-color); /* Light border for definition */
+            background: var(--box-bg-color);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--box-border-color);
             box-shadow: 0 8px 32px rgba(8,40,20,0.15);
             text-align: center;
-            /* Text in the container is now dark, contrasting with the light green box */
-            color: var(--dark-text); 
+            color: var(--dark-text);
         }
 
-        /* Logo Area */
         .logo-area {
             margin-bottom: 30px;
             padding-bottom: 25px;
-            /* Dark border separator */
-            border-bottom: 1px solid rgba(17, 75, 43, 0.2); 
+            border-bottom: 1px solid rgba(17, 75, 43, 0.2);
         }
 
         .logo-icon {
             display: inline-flex;
-            width: 180px;      
-            height: 120px;     
+            width: 180px;
+            height: 120px;
             margin-bottom: 10px;
-            overflow: hidden;  
+            overflow: hidden;
             position: relative;
-            justify-content: center; 
-            align-items: center;    
+            justify-content: center;
+            align-items: center;
         }
         
-        /* NOTE: Assuming 'dark-logo.jpeg' is the version without the white circle now. */
         .logo-icon img {
             width: 100%;
             height: 100%;
@@ -91,45 +80,39 @@
         .app-name {
             font-size: 1.3em;
             font-weight: 700;
-            color: var(--green-900); /* Dark green text */
+            color: var(--green-900);
             display: block;
             letter-spacing: 1px;
-            text-shadow: none; /* No shadow needed on dark text on light background */
         }
 
-        /* Main Title Area */
         .main-title h1 {
-            font-size: 2.5em; 
-            color: var(--dark-text); 
+            font-size: 2.5em;
+            color: var(--dark-text);
             margin-bottom: 5px;
             font-weight: 700;
         }
 
         .main-title p.subtitle {
             font-size: 1.1em;
-            color: var(--light-text); 
+            color: var(--light-text);
             opacity: 0.9;
             margin-bottom: 50px;
         }
 
-
-        /* Role Cards Container */
         .role-cards {
             display: flex;
             justify-content: center;
-            gap: 30px; 
+            gap: 30px;
         }
 
-        /* **Transparent Card Styling (Donor/Reporter)** */
         .role-card {
-            /* **Highly Transparent Card Background** */
-            background-color: rgba(255, 255, 255, 0.4); 
-            border: 1px solid rgba(255, 255, 255, 0.8); /* Light border */
-            backdrop-filter: blur(5px); 
+            background-color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
             border-radius: 18px;
-            padding: 40px 25px; 
-            width: 100%; 
-            max-width: 300px; 
+            padding: 40px 25px;
+            width: 100%;
+            max-width: 300px;
             text-align: center;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             cursor: pointer;
@@ -137,52 +120,48 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 0 5px 15px rgba(8,40,20,0.1); 
-            color: var(--dark-text); /* Card text is dark for readability */
+            box-shadow: 0 5px 15px rgba(8,40,20,0.1);
+            color: var(--dark-text);
         }
 
-        /* Modern Hover Effect */
         .role-card:hover {
-            transform: translateY(-5px); 
-            /* Highlight border on hover */
-            border: 1px solid var(--green-700); 
-            box-shadow: var(--heavy-shadow); 
-            background-color: rgba(255, 255, 255, 0.7); /* Less transparent white on hover */
+            transform: translateY(-5px);
+            border: 1px solid var(--green-700);
+            box-shadow: var(--heavy-shadow);
+            background-color: rgba(255, 255, 255, 0.7);
         }
 
         .role-card .icon {
-            font-size: 4em; 
-            color: var(--green-700); /* Dark green icon color */
+            font-size: 4em;
+            color: var(--green-700);
             margin-bottom: 20px;
-            text-shadow: none; 
         }
 
         .role-card h2 {
-            font-size: 1.5em; 
-            color: var(--dark-text); 
+            font-size: 1.5em;
+            color: var(--dark-text);
             margin-bottom: 10px;
             font-weight: 700;
         }
 
         .role-card p {
             font-size: 0.95em;
-            color: var(--light-text); 
-            line-height: 1.6; 
+            color: var(--light-text);
+            line-height: 1.6;
             margin-bottom: 0;
-            flex-grow: 1; 
+            flex-grow: 1;
         }
         
-        /* Responsive Adjustments */
         @media (max-width: 650px) {
             .container {
                 padding: 40px 20px;
             }
             .role-cards {
-                flex-direction: column; 
+                flex-direction: column;
                 align-items: center;
             }
             .role-card {
-                max-width: 100%; 
+                max-width: 100%;
                 width: 300px;
             }
         }
@@ -193,7 +172,7 @@
         
         <div class="logo-area">
             <div class="logo-icon">
-                <img src="images/circle-logo.png" alt="Smart Aid Logo"> 
+                <img src="images/circle-logo.png" alt="Smart Aid Logo">
             </div>
             <span class="app-name">SMART AID</span>
         </div>
@@ -205,14 +184,16 @@
 
         <div class="role-cards">
             
-            <a href="donor_signup.html" class="role-card">
+            <!-- LINK UPDATED TO donor_signup.php -->
+            <a href="donor_signup.php" class="role-card">
                 <div class="icon"><span class="material-icons-outlined">volunteer_activism</span></div> 
                 <h2>Donor</h2>
                 <p>I want to provide surplus food, goods, or financial aid to support local needs.</p>
             </a>
 
             
-            <a href="reporter_signup.html" class="role-card">
+            <!-- LINK UPDATED TO reporter_signup.php -->
+            <a href="reporter_signup.php" class="role-card">
                 <div class="icon"><span class="material-icons-outlined">campaign</span></div> 
                 <h2>Reporter / Community Leader</h2>
                 <p>I want to report individuals or communities in need of support in my area.</p>

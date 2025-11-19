@@ -5,14 +5,16 @@ require 'config.php';   // DB connection
 
 // Only process POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    // Redirect non-POST requests to the main page
     header("Location: homepage.html");
     exit();
 }
 
-// Determine role (donor/reporter)
+// Determine role (donor/reporter) and set redirection targets
 $role = $_POST['role'] ?? '';
-$redirect_page = ($role === 'reporter') ? 'reporter_login.html' : 'donor_login.html';
-$error_page     = ($role === 'reporter') ? 'reporter_signup.html' : 'donor_signup.html';
+// CORRECTED: Use .php extensions for redirects
+$redirect_page = ($role === 'reporter') ? 'reporter_login.php' : 'donor_login.php';
+$error_page    = ($role === 'reporter') ? 'reporter_signup.php' : 'donor_signup.php';
 
 // Collect and sanitize input data
 $name     = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -38,16 +40,23 @@ if (!preg_match($phone_regex, $phone)) {
     header("Location: $error_page?error=invalid_phone");
     exit();
 }
+// Note: Email strength/domain validation is handled client-side but should be enforced here too.
 
 //  ✅ Check if email already exists
-$stmt_check = $pdo->prepare("SELECT user_id FROM users WHERE email = :email LIMIT 1");
-$stmt_check->bindParam(':email', $email);
-$stmt_check->execute();
+try {
+    $stmt_check = $pdo->prepare("SELECT user_id FROM users WHERE email = :email LIMIT 1");
+    $stmt_check->bindParam(':email', $email);
+    $stmt_check->execute();
 
-if ($stmt_check->rowCount() > 0) {
-    header("Location: $error_page?error=exists");
+    if ($stmt_check->rowCount() > 0) {
+        header("Location: $error_page?error=exists");
+        exit();
+    }
+} catch (PDOException $e) {
+    header("Location: $error_page?error=db_fail");
     exit();
 }
+
 
 // ✅ Insert new user (hash password)
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
@@ -63,16 +72,16 @@ $stmt_insert->bindParam(':phone', $phone);
 $stmt_insert->bindParam(':location', $location);
 $stmt_insert->bindParam(':role', $role);
 
-if ($stmt_insert->execute()) {
-    header("Location: $redirect_page?signup=success&email=" . urlencode($email));
-    exit();
-} else {
+try {
+    if ($stmt_insert->execute()) {
+        header("Location: $redirect_page?signup=success&email=" . urlencode($email));
+        exit();
+    } else {
+        header("Location: $error_page?error=db_fail");
+        exit();
+    }
+} catch (PDOException $e) {
     header("Location: $error_page?error=db_fail");
     exit();
 }
-
-echo "<pre>";
-var_dump($_POST);
-echo "</pre>";
-exit();
 ?>
