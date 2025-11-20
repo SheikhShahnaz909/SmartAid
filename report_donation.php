@@ -1,62 +1,34 @@
 <?php
-// Handles submitting donation (donor) OR reporting need (reporter)
-
 require 'config.php';
 session_start();
+if (!isset($_SESSION['user_id'])) { header('Location: donor_login.php'); exit; }
+$userId = (int)$_SESSION['user_id'];
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    die("Invalid request");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['aadhaar'])) {
+  header('Location: donor_profile.php?error=upload');
+  exit;
 }
 
-if (!isset($_SESSION['user_id'])) {
-    die("Unauthorized access");
+$allowed = ['image/jpeg','image/png','application/pdf'];
+$file = $_FILES['aadhaar'];
+if ($file['error'] !== 0 || !in_array($file['type'],$allowed)) {
+  header('Location: donor_profile.php?error=filetype');
+  exit;
 }
 
-$user_id = $_SESSION['user_id'];
-$role = $_SESSION['user_role'];
-$action = $_POST['action'] ?? '';
+// create uploads dir if not exists
+$dir = __DIR__.'/uploads/aadhaar';
+if (!is_dir($dir)) mkdir($dir, 0700, true);
 
-// ✅ DONOR → Add donation
-if ($role === "donor" && $action === "add_donation") {
+// move file, create unique name
+$fname = $userId . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
+$dest = $dir . '/' . $fname;
+move_uploaded_file($file['tmp_name'], $dest);
 
-    $item_name = $_POST['item_name'] ?? '';
-    $quantity = $_POST['quantity'] ?? '';
-    $expiry = $_POST['expiry_date'] ?? '';
-    $pickup = $_POST['pickup_location'] ?? '';
+// store path (consider encrypting the file at rest)
+$pdo->prepare("UPDATE users SET aadhaar_uploaded_file = :path, verification_status = 'pending', consent_aadhaar = 1 WHERE user_id = :id")
+    ->execute([':path'=>$fname, ':id'=>$userId]);
 
-    $stmt = $pdo->prepare("INSERT INTO donations (donor_id, item_name, quantity, expiry_date, pickup_location, status)
-                           VALUES (:id, :item, :qty, :exp, :pickup, 'Pending')");
-    $stmt->execute([
-        ':id' => $user_id,
-        ':item' => $item_name,
-        ':qty' => $quantity,
-        ':exp' => $expiry,
-        ':pickup' => $pickup
-    ]);
-
-    echo "Donation submitted successfully!";
-    exit();
-}
-
-// ✅ REPORTER → Report need
-if ($role === "reporter" && $action === "report_need") {
-
-    $type = $_POST['report_type'] ?? '';
-    $desc = $_POST['need_description'] ?? '';
-    $loc  = $_POST['need_location'] ?? '';
-
-    $stmt = $pdo->prepare("INSERT INTO reports (reporter_id, report_type, description, location, status)
-                           VALUES (:id, :type, :desc, :loc, 'New')");
-    $stmt->execute([
-        ':id' => $user_id,
-        ':type' => $type,
-        ':desc' => $desc,
-        ':loc' => $loc
-    ]);
-
-    echo "Report submitted successfully!";
-    exit();
-}
-
-echo "Invalid action.";
-?>
+header('Location: donor_profile.php?msg=uploaded');
+exit;
+php?>

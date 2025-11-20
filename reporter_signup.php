@@ -1,5 +1,11 @@
 <?php
-// reporter_signup.php
+// reporter_signup.php - Reporter Sign Up Form
+session_start();
+// Redirect already logged-in reporters
+if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') { 
+    header("Location: reporter_homepage.php"); 
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
-        /* ✅ Original CSS preserved (from reporter_signup.html) :contentReference[oaicite:1]{index=1}*/
+        /* CSS styles provided in the original file */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
         :root {
@@ -127,7 +133,7 @@
             text-decoration: underline;
         }
 
-        /* Error boxes (from original file) :contentReference[oaicite:2]{index=2} */
+        /* Error boxes */
         .error-message {
             color: var(--text-color);
             font-weight: 600;
@@ -153,10 +159,8 @@
 
         <div id="email-error-box" class="error-message"></div>
 
-        <!-- ✅ Backend action updated -->
         <form action="signup.php" method="POST" onsubmit="return validateReporterSignupForm()">
 
-            <!-- Hidden role field required for backend -->
             <input type="hidden" name="role" value="reporter">
 
             <div class="input-group">
@@ -196,7 +200,7 @@
     </div>
 
     <script>
-        /* ✅ Original JS validation preserved (from reporter_signup.html) :contentReference[oaicite:3]{index=3} */
+        /* JS validation */
         function displayError(id, msg) {
             const el = document.getElementById(id);
             el.textContent = msg;
@@ -225,6 +229,7 @@
                 valid = false;
             }
 
+            // Reporter specific email rule
             const emailRegex = /@(\b(gmail|hotmail)\.com\b)$/i;
             if (!emailRegex.test(email)) {
                 displayError("email-error-box", "Email must end with gmail.com or hotmail.com.");
@@ -238,9 +243,12 @@
             }
 
             const phoneRegex = /^\d{10}$/;
-            if (!phoneRegex.test(phone)) {
+            if (!phoneRegex.test(phone.replace(/[^\d]/g, ''))) { // Clean phone for check
                 displayError("phone-error-box", "Phone must contain exactly 10 digits.");
                 valid = false;
+            } else {
+                // Normalize phone number before submission
+                document.getElementById("phone").value = phone.replace(/[^\d]/g, '');
             }
 
             return valid;

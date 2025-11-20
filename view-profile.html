@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Aid — View Profile</title>
+  <style>
+    :root{
+      --card:#ffffffcc;
+      --muted:#6b7280;
+      --accent:#0f766e;
+      --shadow: 0 8px 24px rgba(16,24,40,0.08);
+      --radius:12px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    /* background image */
+    html,body{height:100%;margin:0;-webkit-font-smoothing:antialiased;}
+    body{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4)),
+        url('signin-background.jpeg.jpg') center/cover no-repeat;
+      font-family:Inter, system-ui, Roboto, Arial;
+      color:#07201a;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 22px;
+      background:transparent;
+      max-width:980px;margin:0 auto;
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0ea5a3,#0f766e);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+
+    .wrap{max-width:980px;margin:22px auto;padding:18px;display:grid;grid-template-columns:320px 1fr;gap:18px}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      backdrop-filter: blur(6px);
+    }
+
+    .profile-head{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+    .avatar{width:120px;height:120px;border-radius:16px;background:linear-gradient(120deg,#ffd,#f8b);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0b1220;font-size:36px;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    h1{margin:6px 0 0 0;font-size:20px}
+
+    .info-row{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .info-item{display:flex;gap:12px;align-items:center}
+    .info-item strong{min-width:110px;color:#0b1220}
+
+    .actions{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+    .btn-primary{background:var(--accent);color:white;font-weight:600}
+    .btn-ghost{background:transparent;border:1px solid rgba(15,118,110,0.12)}
+
+    .small-card{background:linear-gradient(180deg, rgba(255,255,255,0.85), transparent);padding:12px;border-radius:10px}
+    .socials{display:flex;gap:8px;flex-wrap:wrap}
+    .socials a{display:inline-block;padding:8px 10px;border-radius:8px;background:#f3faf9;border:1px solid rgba(15,118,110,0.06);text-decoration:none;color:var(--accent);font-weight:600}
+
+    /* profile dropdown (top-right small) */
+    .user-area{display:flex;align-items:center;gap:12px}
+    .user-initial{
+      width:42px;height:42px;border-radius:50%;
+      background-color:rgba(15,118,110,0.95);
+      color:white;display:flex;justify-content:center;align-items:center;font-weight:700;font-size:18px;cursor:pointer;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    }
+    #profileMenu { position: absolute; top:78px; right:22px; width:200px; background: white; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.18); display:none; z-index:200; padding:8px 0; }
+    #profileMenu ul {list-style:none;margin:0;padding:0;}
+    #profileMenu li { padding:10px 15px; }
+    #profileMenu li:hover { background:#f2f6f3; }
+    #profileMenu a{ text-decoration:none; font-size:14px; font-weight:600; color:#0f766e; display:block; }
+
+    /* right column content */
+    section.card h2{margin:0 0 8px 0}
+    section.card h3{margin:10px 0 6px 0}
+
+    /* responsive */
+    @media (max-width:880px){
+      .wrap{grid-template-columns:1fr;padding:12px}
+      .profile-head{flex-direction:row;align-items:center;text-align:left}
+      .avatar{width:80px;height:80px;font-size:28px}
+      #profileMenu{right:12px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">SA</div>
+      <div>
+        <div style="font-weight:700;color:white">Smart Aid</div>
+        <div class="muted" style="font-size:13px;color:rgba(255,255,255,0.9)">Donor profile</div>
+      </div>
+    </div>
+
+    <div class="user-area" style="position:relative;">
+      <div id="userInitial" class="user-initial" aria-haspopup="true" aria-expanded="false">D</div>
+
+      <!-- mini dropdown -->
+      <div id="profileMenu" role="menu" aria-hidden="true">
+        <ul>
+          <li><a href="view-profile.html">View Profile</a></li>
+          <li><a href="donor_homepage.html">Home</a></li>
+          <li style="height:1px;background:#eee;margin:6px 0;"></li>
+          <li><a href="logout.php">Sign Out</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- left: profile card -->
+    <aside class="card" aria-labelledby="profileCard">
+      <div class="profile-head">
+        <div class="avatar" id="avatarBox">
+          <span id="avatarLetter">U</span>
+        </div>
+
+        <div>
+          <h1 id="displayName">Uzma</h1>
+          <div class="muted" id="displayEmail">uzma@example.com</div>
+        </div>
+
+        <!-- actions rearranged: only Edit (no My Donations) -->
+        <div class="actions" style="margin-top:10px">
+          <button class="btn btn-primary" id="editProfileBtn">Edit profile</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="small-card">
+        <div style="font-weight:700">Contact</div>
+        <div class="muted" id="displayPhone">—</div>
+        <div style="height:10px"></div>
+        <div style="font-weight:700">Address</div>
+        <div class="muted" id="displayAddress">—</div>
+      </div>
+
+      <!-- removed social links from left column as requested -->
+
+    </aside>
+
+    <!-- right: more details (socials moved here) -->
+    <section class="card" aria-labelledby="aboutSection">
+      <h2 id="aboutSection">About</h2>
+      <div class="muted" id="displayBio">No bio added yet.</div>
+
+      <div style="margin-top:18px">
+        <h3>Edit history</h3>
+        <div class="muted" id="editHistory">No recent edits (local mode)</div>
+      </div>
+
+      <!-- Social links moved here -->
+      <div style="margin-top:18px">
+        <h3>Social links</h3>
+        <div class="muted" style="font-size:13px;margin-bottom:8px">Linked accounts — editable via "Edit profile".</div>
+        <div id="socialBox" class="small-card">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div id="socialLinksContainer" class="socials">
+              <!-- populated by JS -->
+            </div>
+            <div id="noSocialsMsg" class="muted" style="display:none">No social links added yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <h3>Resources</h3>
+        <div class="muted">You can return to the dashboard from the top-right menu.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit Profile Modal (now includes social inputs) -->
+  <div id="modalEdit" class="modal-backdrop" role="dialog" aria-modal="true" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:60;background:rgba(3,7,18,0.45)">
+    <div class="modal" role="document" style="width:100%;max-width:700px;background:white;border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.5)">
+      <h3 style="margin-top:0">Edit profile</h3>
+
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="flex:0 0 140px;text-align:center">
+          <div class="avatar" id="modalAvatarPreview" style="width:120px;height:120px;border-radius:12px;overflow:hidden">
+            <span id="modalAvatarLetter">U</span>
+          </div>
+          <div style="margin-top:8px">
+            <input id="avatarFile" type="file" accept="image/*" style="display:none">
+            <button class="btn btn-ghost" id="changePicBtn">Change picture</button>
+            <button class="btn btn-ghost" id="removePicBtn" style="margin-left:6px">Remove</button>
+          </div>
+        </div>
+
+        <div style="flex:1">
+          <label>Full name</label>
+          <input id="nameInput" type="text" placeholder="Full name" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;background:transparent">
+
+          <label style="margin-top:10px">Email (read-only)</label>
+          <input id="emailInput" type="email" readonly style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;background:transparent">
+
+          <div style="display:flex;gap:12px;margin-top:10px">
+            <div style="flex:1;min-width:120px">
+              <label>Phone</label>
+              <input id="phoneInput" type="tel" placeholder="+91 98765 43210" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;background:transparent">
+            </div>
+            <div style="flex:1;min-width:120px">
+              <label>Address</label>
+              <input id="addressInput" type="text" placeholder="Street / City / Pincode" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;background:transparent">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Short bio (optional)</label>
+        <textarea id="bioInput" placeholder="Write one or two lines about yourself..." style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;min-height:90px"></textarea>
+      </div>
+
+      <!-- Social inputs -->
+      <div style="margin-top:12px">
+        <h4 style="margin:6px 0">Social links</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:13px">LinkedIn (full URL)</label>
+            <input id="linkedinInput" type="url" placeholder="https://www.linkedin.com/in/yourprofile" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;">
+          </div>
+          <div>
+            <label style="font-size:13px">Instagram (full URL)</label>
+            <input id="instagramInput" type="url" placeholder="https://www.instagram.com/yourprofile" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e7edf6;">
+          </div>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:8px">Paste full profile URLs for best results. These are stored locally (mock).</div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost" id="cancelEdit">Cancel</button>
+        <button class="btn btn-primary" id="saveEdit">Save profile</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const el = id => document.getElementById(id);
+
+    // defaults
+    const defaults = {
+      name: 'Uzma',
+      email: 'uzma@example.com',
+      phone: '',
+      address: '',
+      bio: '',
+      socials: { linkedin: '', instagram: '' },
+      avatarData: null,
+      lastEdited: null
+    };
+
+    function loadProfile(){
+      const raw = localStorage.getItem('sa_profile');
+      const p = raw ? JSON.parse(raw) : defaults;
+      el('displayName').innerText = p.name || defaults.name;
+      el('displayEmail').innerText = p.email || defaults.email;
+      el('displayPhone').innerText = p.phone || '—';
+      el('displayAddress').innerText = p.address || '—';
+      el('displayBio').innerText = p.bio || 'No bio added yet.';
+      el('editHistory').innerText = p.lastEdited ? 'Last edited: ' + new Date(p.lastEdited).toLocaleString() : 'No recent edits (local mode)';
+
+      // socials (moved to right card)
+      const socialsDiv = el('socialLinksContainer');
+      socialsDiv.innerHTML = '';
+      const hasLinkedIn = p.socials && p.socials.linkedin;
+      const hasInstagram = p.socials && p.socials.instagram;
+
+      if(hasLinkedIn){
+        const a = document.createElement('a'); a.href = p.socials.linkedin; a.target='_blank'; a.rel='noopener'; a.textContent = 'LinkedIn'; socialsDiv.appendChild(a);
+      }
+      if(hasInstagram){
+        const a2 = document.createElement('a'); a2.href = p.socials.instagram; a2.target='_blank'; a2.rel='noopener'; a2.textContent = 'Instagram'; socialsDiv.appendChild(a2);
+      }
+
+      el('noSocialsMsg').style.display = (hasLinkedIn || hasInstagram) ? 'none' : 'block';
+
+      // avatar
+      const avatarBox = el('avatarBox');
+      avatarBox.innerHTML = '';
+      if(p.avatarData){
+        const img = document.createElement('img'); img.src = p.avatarData; avatarBox.appendChild(img);
+      } else {
+        const span = document.createElement('span'); span.id = 'avatarLetterInner'; span.innerText = (p.name || defaults.name).charAt(0).toUpperCase();
+        avatarBox.appendChild(span);
+      }
+
+      // top-right initial
+      el('userInitial').innerText = (p.name || defaults.name).charAt(0).toUpperCase();
+    }
+
+    // modal open/close
+    function openModal(){
+      const raw = localStorage.getItem('sa_profile');
+      const p = raw ? JSON.parse(raw) : defaults;
+      el('nameInput').value = p.name || defaults.name;
+      el('emailInput').value = p.email || defaults.email;
+      el('phoneInput').value = p.phone || '';
+      el('addressInput').value = p.address || '';
+      el('bioInput').value = p.bio || '';
+      el('linkedinInput').value = (p.socials && p.socials.linkedin) || '';
+      el('instagramInput').value = (p.socials && p.socials.instagram) || '';
+
+      // avatar preview
+      const preview = el('modalAvatarPreview');
+      preview.innerHTML = '';
+      if(p.avatarData){
+        const img = document.createElement('img'); img.src = p.avatarData; preview.appendChild(img);
+        preview.dataset.preview = p.avatarData;
+      } else {
+        const span = document.createElement('span'); span.innerText = (p.name||defaults.name).charAt(0).toUpperCase(); preview.appendChild(span);
+        preview.dataset.preview = '';
+      }
+
+      el('modalEdit').style.display = 'flex';
+    }
+    function closeModal(){ el('modalEdit').style.display = 'none'; }
+
+    // wire buttons
+    el('editProfileBtn').addEventListener('click', openModal);
+    el('cancelEdit').addEventListener('click', closeModal);
+
+    el('changePicBtn').addEventListener('click', ()=> el('avatarFile').click());
+    el('avatarFile').addEventListener('change', function(){
+      const f = this.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        el('modalAvatarPreview').innerHTML = '';
+        const img = document.createElement('img'); img.src = e.target.result; el('modalAvatarPreview').appendChild(img);
+        el('modalAvatarPreview').dataset.preview = e.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+    el('removePicBtn').addEventListener('click', ()=>{
+      el('modalAvatarPreview').dataset.preview = '';
+      el('modalAvatarPreview').innerHTML = '<span>' + (el('nameInput').value.charAt(0) || 'U').toUpperCase() + '</span>';
+    });
+
+    el('saveEdit').addEventListener('click', ()=>{
+      // basic validation and store
+      const profile = {
+        name: el('nameInput').value.trim() || defaults.name,
+        email: el('emailInput').value.trim() || defaults.email,
+        phone: el('phoneInput').value.trim(),
+        address: el('addressInput').value.trim(),
+        bio: el('bioInput').value.trim(),
+        socials: {
+          linkedin: el('linkedinInput').value.trim(),
+          instagram: el('instagramInput').value.trim()
+        },
+        avatarData: el('modalAvatarPreview').dataset.preview || null,
+        lastEdited: new Date().toISOString()
+      };
+      localStorage.setItem('sa_profile', JSON.stringify(profile));
+      loadProfile();
+      closeModal();
+      // small notice (non-blocking)
+      const tmp = document.createElement('div');
+      tmp.style.position = 'fixed';
+      tmp.style.bottom = '18px';
+      tmp.style.right = '18px';
+      tmp.style.background = 'rgba(15,118,110,0.95)';
+      tmp.style.color = 'white';
+      tmp.style.padding = '10px 14px';
+      tmp.style.borderRadius = '10px';
+      tmp.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+      tmp.innerText = 'Profile saved locally (mock)';
+      document.body.appendChild(tmp);
+      setTimeout(()=> tmp.remove(), 2200);
+    });
+
+    // top-right menu toggle
+    const userInitial = el('userInitial');
+    const menu = el('profileMenu');
+    userInitial.addEventListener('click', (e)=> {
+      e.stopPropagation();
+      const visible = menu.style.display === 'block';
+      menu.style.display = visible ? 'none' : 'block';
+    });
+    document.addEventListener('click', (e)=> {
+      if (!userInitial.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
+    });
+    window.addEventListener('keydown', e => { if(e.key === 'Escape') menu.style.display = 'none'; });
+
+    // init
+    loadProfile();
+
+    // close modal on backdrop click
+    document.querySelectorAll('.modal-backdrop').forEach(back=>{
+      back.addEventListener('click', e => { if(e.target === back) back.style.display = 'none'; });
+    });
+  </script>
+</body>
+</html>

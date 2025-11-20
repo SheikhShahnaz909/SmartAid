@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>My Donations - Smart Aid</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+  --green:#1e7a43;
+  --dark:#0f3c23;
+  --muted:#6b6b6b;
+  --border:#ddd;
+  --bg:#f4fff7;
+  font-family:"Inter", sans-serif;
+}
+body{
+  margin:0;
+  background:var(--bg);
+  padding:20px;
+}
+.container{
+  max-width:850px;
+  margin:auto;
+}
+
+/* Header */
+.header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:20px;
+}
+.logo{
+  width:48px;height:48px;border-radius:12px;
+  background:linear-gradient(135deg,var(--green),#2fb267);
+  display:flex;justify-content:center;align-items:center;
+  font-size:20px;font-weight:800;color:white;
+}
+.header-title{
+  font-size:20px;font-weight:800;color:var(--dark);
+}
+
+/* Form */
+.form-box{
+  background:white;
+  padding:16px;
+  border-radius:12px;
+  margin-bottom:20px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.06);
+}
+.input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+}
+.btn{
+  background:var(--green);
+  color:white;
+  padding:10px 15px;
+  border:0;
+  border-radius:10px;
+  cursor:pointer;
+  width:100%;
+  font-weight:700;
+}
+
+/* History Section */
+.date-title{
+  margin:30px 0 10px;
+  font-size:18px;
+  font-weight:800;
+  color:var(--dark);
+  border-left:4px solid var(--green);
+  padding-left:10px;
+}
+
+/* YouTube history row */
+.history-row{
+  display:flex;
+  gap:15px;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.icon{
+  width:50px;height:50px;border-radius:12px;
+  background:#ccf4dc;
+  color:var(--green);
+  font-size:26px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.info{
+  display:flex;
+  flex-direction:column;
+}
+.item-name{
+  font-size:16px;
+  font-weight:700;
+  color:var(--dark);
+}
+.meta{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:4px;
+}
+.status{
+  margin-top:6px;
+  font-size:12px;
+  background:#d6ffe5;
+  padding:4px 10px;
+  border-radius:999px;
+  color:var(--green);
+  font-weight:700;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  margin-top:40px;
+  font-size:16px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <div class="header">
+        <div class="logo">SA</div>
+        <div class="header-title">My Donation</div>
+    </div>
+
+    <!-- Add donation form -->
+    <div class="form-box">
+      <input id="item" class="input" placeholder="Item donated (Rice, Clothes)">
+      <input id="qty" class="input" placeholder="Quantity (5kg, 3 sets)">
+      <input id="type" class="input" placeholder="Type (Food, Clothes, Money)">
+      <button class="btn" onclick="saveDonation()">Add Donation</button>
+    </div>
+
+    <div id="historyContainer"></div>
+
+    <div id="empty" class="empty" style="display:none;">
+        No donation history yet.
+    </div>
+
+</div>
+
+<script>
+// --------------------- //
+//   Auto Save System    //
+// --------------------- //
+
+let donations = JSON.parse(localStorage.getItem("sa_history")) || [];
+
+// Save donation automatically
+function saveDonation(){
+    let item = document.getElementById("item").value.trim();
+    let qty  = document.getElementById("qty").value.trim();
+    let type = document.getElementById("type").value.trim();
+
+    if(!item || !qty || !type){
+        alert("Fill all fields");
+        return;
+    }
+
+    let today = new Date();
+    let dateOnly = today.toISOString().split("T")[0];
+
+    donations.push({
+        item,
+        qty,
+        type,
+        date: dateOnly,
+        status: "Saved"
+    });
+
+    localStorage.setItem("sa_history", JSON.stringify(donations));
+
+    document.getElementById("item").value = "";
+    document.getElementById("qty").value = "";
+    document.getElementById("type").value = "";
+
+    renderHistory();
+}
+
+// --------------------- //
+//   Render History      //
+// YouTube Group Style   //
+// --------------------- //
+
+function renderHistory(){
+    const box = document.getElementById("historyContainer");
+    const empty = document.getElementById("empty");
+
+    box.innerHTML = "";
+
+    if(donations.length === 0){
+        empty.style.display = "block";
+        return;
+    }
+
+    empty.style.display = "none";
+
+    // group by date
+    let grouped = {};
+    donations.forEach(d => {
+        if(!grouped[d.date]) grouped[d.date] = [];
+        grouped[d.date].push(d);
+    });
+
+    // render groups
+    Object.keys(grouped).reverse().forEach(date => {
+
+        // Date Title like YouTube
+        let today = new Date().toISOString().split("T")[0];
+        let title = (date === today) ? "Today" : date;
+
+        box.innerHTML += `<div class="date-title">${title}</div>`;
+
+        grouped[date].forEach(d => {
+            box.innerHTML += `
+                <div class="history-row">
+                    <div class="icon">🍃</div>
+                    <div class="info">
+                        <div class="item-name">${d.item}</div>
+                        <div class="meta">Quantity: ${d.qty} • Type: ${d.type}</div>
+                        <div class="status">${d.status}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+    });
+}
+
+renderHistory();
+</script>
+
+</body>
+</html>

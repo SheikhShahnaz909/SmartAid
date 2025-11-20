@@ -1,109 +1,91 @@
 <?php
-// forgot_password.php - Form to request a password reset email
+// forgot_password.php
+require 'config.php';
+require 'mailer_config.php';
+session_start();
+
+$errors = [];
+$success = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Please enter a valid email address.";
+    } else {
+        // Attempt to find user (we won't reveal existence)
+        $stmt = $pdo->prepare("SELECT user_id, name, email FROM users WHERE email = :email LIMIT 1");
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            // generate secure token
+            $token = bin2hex(random_bytes(24)); // 48 hex chars
+            $token_hash = password_hash($token, PASSWORD_DEFAULT);
+            $expires_at = date('Y-m-d H:i:s', time() + 60*60); // 1 hour
+
+            // Insert hashed token
+            $stmtIns = $pdo->prepare("INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (:uid, :th, :exp)");
+            $stmtIns->execute([
+                ':uid' => $user['user_id'],
+                ':th'  => $token_hash,
+                ':exp' => $expires_at
+            ]);
+
+            // Build reset link (use full domain in production)
+            $reset_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://")
+                        . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['REQUEST_URI']), '/\\')
+                        . "/reset_password.php?uid=" . $user['user_id'] . "&token=" . $token;
+
+            $subject = "Smart Aid — Password reset request";
+            $htmlBody = "<p>Hi " . htmlspecialchars($user['name']) . ",</p>"
+                      . "<p>We received a request to reset your Smart Aid password. Click the link below to set a new password. This link will expire in 1 hour.</p>"
+                      . "<p><a href=\"" . htmlspecialchars($reset_link) . "\">Reset your password</a></p>"
+                      . "<p>If you did not request this, you can safely ignore this email.</p>"
+                      . "<p>— Smart Aid team</p>";
+
+            send_email($user['email'], $subject, $htmlBody);
+        }
+
+        // Generic success message regardless of whether email exists
+        $success = true;
+    }
+}
 ?>
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Aid - Reset Password</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        /* CSS styles adapted from login/signup for consistency */
-        :root {
-            --primary-green: #1A733E; 
-            --light-green: #E0FFE0;
-            --box-bg-color: rgba(255, 255, 255, 0.95);
-            --dark-text: #114b2b;
-            --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        /* ... (General styles for body, container, input-group remain similar) ... */
-        body {
-            background: linear-gradient(180deg, #eaf8ef 0%, #f7fff9 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--dark-text);
-        }
-
-        .reset-container {
-            width: 90%;
-            max-width: 400px;
-            padding: 30px;
-            border-radius: 15px;
-            background: var(--box-bg-color);
-            box-shadow: var(--box-shadow);
-            text-align: center;
-        }
-
-        h2 {
-            color: var(--primary-green);
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: #555;
-            margin-bottom: 25px;
-            font-size: 0.9em;
-        }
-
-        .input-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .input-group input[type="email"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-green);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: var(--primary-green);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Forgot password — Smart Aid</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:Inter,Arial;background:#f4fff7;color:#08321b;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{background:white;padding:20px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.06);width:420px}
+    input{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:12px}
+    .btn{background:#185e34;color:#fff;padding:10px 12px;border-radius:8px;border:none;cursor:pointer}
+    .msg{padding:10px;border-radius:8px;margin-bottom:8px}
+    .error{background:#ffecec;color:#a33}
+    .success{background:#e6ffef;color:#0a5}
+  </style>
 </head>
 <body>
-    <div class="reset-container">
-        <h2>Forgot Password?</h2>
-        <p>Enter your account email address to receive a password reset link.</p>
+  <div class="card">
+    <h3>Reset your password</h3>
+    <?php if ($success): ?>
+      <div class="msg success">If that email exists in our system, a password reset link has been sent. Check your inbox (and spam).</div>
+      <p style="margin-top:12px"><a href="donor_login.php">Back to login</a></p>
+    <?php else: ?>
+      <?php if (!empty($errors)): foreach($errors as $e): ?>
+        <div class="msg error"><?php echo htmlspecialchars($e); ?></div>
+      <?php endforeach; endif; ?>
 
-        <form action="send_reset_link.php" method="POST"> 
-            <div class="input-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="name@example.com">
-            </div>
+      <form method="POST" action="">
+        <label for="email">Enter your account email</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required>
+        <button class="btn" type="submit">Send reset link</button>
+      </form>
 
-            <button type="submit" class="submit-btn">Send Reset Link</button>
-        </form>
-
-        <a href="donor_login.php" class="back-link">← Back to Login</a>
-    </div>
+      <p style="margin-top:12px"><a href="donor_login.php">Back to login</a></p>
+    <?php endif; ?>
+  </div>
 </body>
 </html>

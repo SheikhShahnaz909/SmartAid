@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Aid — Donor Settings</title>
+  <style>
+    :root{
+      --bg-overlay: rgba(4, 15, 10, 0.55);
+      --card-bg: rgba(255,255,255,0.95);
+      --muted:#cbd5d9;
+      --text:#042023;
+      --accent:#0f766e;
+      --danger:#dc2626;
+      --shadow:0 10px 30px rgba(2,6,23,0.35);
+      --radius:12px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    html,body{height:100%;margin:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+
+    body{
+      background:
+        linear-gradient(var(--bg-overlay), var(--bg-overlay)),
+        url('signin-background.jpeg.jpg') center/cover no-repeat fixed;
+      color:var(--text);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 22px;
+      gap:12px;
+      backdrop-filter: blur(6px);
+    }
+
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:48px;height:48px;border-radius:50%;overflow:hidden;box-shadow:0 6px 18px rgba(2,6,23,0.35);
+      display:flex;align-items:center;justify-content:center;background:transparent;
+    }
+    .logo img{width:100%;height:100%;object-fit:cover;display:block}
+    .brand h1{margin:0;font-size:18px;color:#fff;font-weight:700;letter-spacing:0.2px}
+    .brand .sub{font-size:13px;color:rgba(255,255,255,0.9);margin-top:2px}
+
+    main{
+      max-width:1100px;
+      margin:28px auto;
+      padding:18px;
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:20px;
+    }
+
+    .panel{
+      background: var(--card-bg);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      color: #06333a;
+    }
+
+    .profile-quick{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+    .quick-avatar{width:56px;height:56px;border-radius:12px;background:linear-gradient(120deg,#ffd,#f8b);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042023}
+    .small-muted{font-size:13px;color:#4b5563}
+
+    nav.settings-menu{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    nav.settings-menu button{
+      text-align:left;padding:10px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-weight:700;color:#0b3b35;
+    }
+    nav.settings-menu button.active{
+      background:linear-gradient(90deg, rgba(15,118,110,0.09), transparent);
+      color:var(--accent);
+      box-shadow:inset 0 -2px 0 rgba(15,118,110,0.04);
+    }
+
+    footer.info{margin-top:14px;color:#4b5563;font-size:13px}
+
+    .card{
+      background: var(--card-bg);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      color:#042023;
+    }
+
+    h2{margin:0 0 8px 0}
+    p.lead{margin:0 0 12px 0;color:#47585a}
+
+    .row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+    .field{flex:1 1 200px;display:flex;flex-direction:column;gap:6px}
+    label{font-size:13px;color:#47585a}
+    input[type="text"], input[type="email"], input[type="tel"], select{
+      padding:10px;border-radius:10px;border:1px solid #e6eef6;background:transparent;font-size:14px;outline:none;
+    }
+
+    .prefs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .pref-card{padding:12px;border-radius:10px;border:1px solid rgba(15,118,110,0.06);background:rgba(255,255,255,0.75)}
+    .pref-card strong{display:block;color:#073935;margin-bottom:6px}
+
+    .switch{width:46px;height:28px;background:#e6eef6;border-radius:20px;padding:4px;display:inline-block;position:relative;cursor:pointer}
+    .switch .dot{width:20px;height:20px;border-radius:50%;background:white;position:absolute;left:4px;top:4px;transition:all .18s}
+    .switch.on{background:linear-gradient(90deg,var(--accent), #0891b2)}
+    .switch.on .dot{left:22px}
+
+    .actions{display:flex;gap:10px;align-items:center}
+    .btn-primary{background:var(--accent);color:white;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    .btn-ghost{background:transparent;border:1px solid rgba(6,51,43,0.06);padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn-danger{background:var(--danger);color:white;padding:10px 12px;border-radius:10px;border:none;cursor:pointer}
+
+    .danger{background:linear-gradient(180deg, rgba(255,240,240,0.6), transparent); border:1px solid rgba(220,38,38,0.08);padding:12px;border-radius:10px}
+
+    .modal-backdrop{position:fixed;inset:0;background:rgba(3,7,18,0.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+    .modal{width:100%;max-width:520px;background:var(--card-bg);border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.6)}
+    .modal .actions{display:flex;justify-content:flex-end;gap:8px}
+
+    /* Dropdown menu style */
+    .d-dropdown{position:absolute;top:48px;right:0;background:white;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.18);width:180px;display:none;overflow:hidden;z-index:80}
+    .d-dropdown a{display:block;padding:10px 14px;color:#0f766e;font-weight:600;text-decoration:none;border-bottom:1px solid #eee}
+    .d-dropdown a:last-child{border-bottom:none;color:#b91c1c}
+
+    @media (max-width:880px){
+      main{grid-template-columns:1fr;padding:12px}
+      header{padding:12px}
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER: back arrow + logo + D dropdown -->
+  <header>
+    <div style="display:flex;align-items:center;gap:14px">
+
+      <!-- Super-thick centered back arrow -->
+      <div onclick="window.location.href='donor_homepage.html'"
+           style="
+              cursor:pointer;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              width:35px;
+              height:35px;
+              border-radius:50%;
+              background:rgba(255,255,255,0.34);
+              backdrop-filter:blur(8px);
+              box-shadow:0 5px 16px rgba(0,0,0,0.32);
+           ">
+        <span style="
+              font-size:20px;
+              font-weight:900;
+              color:white;
+              line-height:1;
+              margin-left:-4px;
+              letter-spacing:-4px;
+           ">
+          🡸
+        </span>
+      </div>
+
+      <!-- Brand + Logo -->
+      <div class="brand" style="display:flex;align-items:center;gap:12px">
+        <div class="logo" aria-hidden="true">
+          <img src="circle-logo.png" alt="Smart Aid logo">
+        </div>
+        <div>
+          <h1>Smart Aid</h1>
+          <div class="sub">Donor settings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: D Icon + dropdown -->
+    <div style="position:relative">
+      <div id="dropdownToggle"
+           style="font-weight:700;background:linear-gradient(120deg,#0ea5a3,#0f766e);color:white;padding:8px 12px;border-radius:8px;cursor:pointer;user-select:none;">
+        D
+      </div>
+
+      <div id="dropdownMenu" class="d-dropdown" aria-hidden="true">
+        <a href="view-profile.html">View Profile</a>
+        <a href="donor-settings.html">Settings</a>
+        <a href="donor_homepage.html">Home</a>
+        <a href="index.html">Sign Out</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT PANEL -->
+    <aside class="panel">
+      <div class="profile-quick">
+        <div class="quick-avatar" id="quickAvatar">U</div>
+        <div>
+          <div id="displayNameLeft" style="font-weight:800;cursor:pointer">Uzma</div>
+          <div class="small-muted" id="displayEmailLeft">uzma@example.com</div>
+        </div>
+      </div>
+
+      <nav class="settings-menu" aria-label="Settings sections">
+        <button class="active" data-section="account">Account</button>
+        <button data-section="donation">Donation Preferences</button>
+        <button data-section="privacy">Privacy & Security</button>
+        <button data-section="support">Help & Support</button>
+      </nav>
+
+      <footer class="info">
+        <div class="small-muted">Version 1.0 • Safe & secure</div>
+        <div class="small-muted">Last saved: <span id="lastSaved">Not yet</span></div>
+      </footer>
+    </aside>
+
+    <!-- RIGHT: content -->
+    <section>
+      <!-- Account -->
+      <div class="card" id="section-account">
+        <h2>Account</h2>
+        <p class="lead">Manage email, phone, login methods and password.</p>
+
+        <div class="row">
+          <div class="field">
+            <label>Full name</label>
+            <input id="nameInput" type="text" placeholder="Your full name">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="emailInput" type="email" placeholder="you@example.com">
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input id="phoneInput" type="tel" placeholder="+91 98765 43210">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Change password</label>
+            <button class="btn-ghost" id="changePasswordBtn">Change password</button>
+          </div>
+          <div class="field">
+            <label>Login activity</label>
+            <div class="small-muted">Last login: <span id="lastLogin">—</span></div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:8px">
+          <button class="btn-primary" id="saveAccount">Save changes</button>
+          <button class="btn-ghost" id="resetAccount">Reset</button>
+        </div>
+      </div>
+
+      <!-- Donation preferences -->
+      <div class="card" id="section-donation" style="margin-top:16px;display:none">
+        <h2>Donation Preferences</h2>
+        <p class="lead">Choose categories and locations you care about most.</p>
+
+        <div class="prefs" style="margin-bottom:12px">
+          <label class="pref-card"><input type="checkbox" class="cat" value="Food"> <strong>Food</strong><div class="small-muted">Groceries, meals</div></label>
+          <label class="pref-card"><input type="checkbox" class="cat" value="Clothes"> <strong>Clothes</strong><div class="small-muted">Seasonal clothing</div></label>
+          <label class="pref-card"><input type="checkbox" class="cat" value="Education"> <strong>Education</strong><div class="small-muted">Scholarships</div></label>
+          <label class="pref-card"><input type="checkbox" class="cat" value="Medical"> <strong>Medical</strong><div class="small-muted">Medical aid</div></label>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Preferred city / area</label>
+            <input id="cityInput" type="text" placeholder="e.g., Mumbai, Delhi">
+          </div>
+          <div class="field">
+            <label>Auto match requests</label>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div id="autoMatchSwitch" class="switch"><div class="dot"></div></div>
+              <div class="small-muted">Automatically notify when a request matches your preferences.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:8px">
+          <button class="btn-primary" id="saveDonation">Save preferences</button>
+        </div>
+      </div>
+
+      <!-- Privacy & Security -->
+      <div class="card" id="section-privacy" style="margin-top:16px;display:none">
+        <h2>Privacy & Security</h2>
+        <p class="lead">Control what others can see and protect your account.</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700">Show my donation history publicly</div>
+              <div class="small-muted">If off, only you and admins can see full details.</div>
+            </div>
+            <div id="historySwitch" class="switch on"><div class="dot"></div></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700">Show me on leaderboard</div>
+              <div class="small-muted">Hide if you'd rather donate privately.</div>
+            </div>
+            <div id="leaderboardSwitch" class="switch"><div class="dot"></div></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700">Two-factor authentication</div>
+              <div class="small-muted">Add extra protection to your account.</div>
+            </div>
+            <div id="twofaSwitch" class="switch"><div class="dot"></div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px" class="danger">
+          <h3 style="margin:0 0 10px 0">Deactivate or delete account</h3>
+          <div class="small-muted">Deactivating will hide your account; deleting removes all data permanently.</div>
+          <div style="margin-top:10px;display:flex;gap:10px">
+            <button class="btn-ghost" id="deactivateBtn">Deactivate account</button>
+            <button class="btn-danger" id="deleteBtn">Delete account</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Support -->
+      <div class="card" id="section-support" style="margin-top:16px;display:none">
+        <h2>Help & Support</h2>
+        <p class="lead">Questions? We are here to help.</p>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <strong>FAQ</strong>
+            <div class="small-muted">Answers to common questions and how-tos.</div>
+          </div>
+          <div>
+            <strong>Contact support</strong>
+            <div class="small-muted">support@smart-aid.org</div>
+          </div>
+          <div>
+            <strong>Report an issue</strong>
+            <div class="small-muted">Use this to report suspicious requests or problems.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Change Password Modal -->
+  <div id="modalChangePassword" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <h3 style="margin-top:0">Change password</h3>
+      <div style="margin-top:8px">
+        <label>Current password</label>
+        <input id="currentPassword" type="password">
+      </div>
+      <div style="margin-top:8px">
+        <label>New password</label>
+        <input id="newPassword" type="password">
+      </div>
+      <div style="margin-top:8px">
+        <label>Confirm new</label>
+        <input id="confirmPassword" type="password">
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn-ghost" id="closeChangePassword">Cancel</button>
+        <button class="btn-primary" id="saveChangePassword">Change</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="modalConfirm" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="confirmTitle">Confirm</h3>
+      <p id="confirmMessage" class="small-muted">Are you sure?</p>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn-ghost" id="cancelConfirm">Cancel</button>
+        <button class="btn-danger" id="okConfirm">Yes, continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Helper
+    const el = id => document.getElementById(id);
+
+    // NAV: panels and buttons
+    const navButtons = document.querySelectorAll('nav.settings-menu button');
+    const panels = {
+      account: el('section-account'),
+      donation: el('section-donation'),
+      privacy: el('section-privacy'),
+      support: el('section-support')
+    };
+    function showSection(name){
+      Object.values(panels).forEach(p => p.style.display = 'none');
+      if(panels[name]) panels[name].style.display = '';
+      navButtons.forEach(b => b.classList.toggle('active', b.dataset.section === name));
+      localStorage.setItem('sa_settings_active', name);
+    }
+    navButtons.forEach(b => b.addEventListener('click', ()=> showSection(b.dataset.section)));
+
+    // Dropdown toggle
+    const toggle = el('dropdownToggle');
+    const menu = el('dropdownMenu');
+    toggle.addEventListener('click', e => {
+      e.stopPropagation();
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', e => {
+      if(!toggle.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
+    });
+
+    // Initial selection: honor ?open=settings, #settings, localStorage flag, else default to account
+    (function initSection(){
+      const params = new URLSearchParams(window.location.search);
+      if(params.get('open') === 'settings' || window.location.hash === '#settings' || localStorage.getItem('sa_open_settings') === '1'){
+        const saved = localStorage.getItem('sa_settings_active') || 'account';
+        showSection(saved);
+        localStorage.removeItem('sa_open_settings');
+        return;
+      }
+      showSection(localStorage.getItem('sa_settings_active') || 'account');
+    })();
+
+    // Restore fields
+    el('nameInput').value = localStorage.getItem('sa_name') || 'Uzma';
+    el('emailInput').value = localStorage.getItem('sa_email') || 'uzma@example.com';
+    el('phoneInput').value = localStorage.getItem('sa_phone') || '';
+    el('cityInput').value = localStorage.getItem('sa_city') || '';
+    el('displayNameLeft').innerText = localStorage.getItem('sa_name') || 'Uzma';
+    el('displayEmailLeft').innerText = localStorage.getItem('sa_email') || 'uzma@example.com';
+    el('lastLogin').innerText = localStorage.getItem('sa_last_login') || new Date().toLocaleString();
+
+    // Categories restore
+    const cats = document.querySelectorAll('.cat');
+    const savedCats = JSON.parse(localStorage.getItem('sa_categories') || '[]');
+    cats.forEach(c => { if(savedCats.includes(c.value)) c.checked = true; });
+
+    // Switches
+    const switches = { autoMatch: el('autoMatchSwitch'), history: el('historySwitch'), leaderboard: el('leaderboardSwitch'), twofa: el('twofaSwitch') };
+    function toggleSwitch(elm,on){ elm.classList.toggle('on', !!on); }
+    toggleSwitch(switches.autoMatch, localStorage.getItem('sa_autoMatch') === 'true');
+    toggleSwitch(switches.history, localStorage.getItem('sa_showHistory') !== 'false');
+    toggleSwitch(switches.leaderboard, localStorage.getItem('sa_showLeaderboard') === 'true');
+    toggleSwitch(switches.twofa, localStorage.getItem('sa_2fa') === 'true');
+    Object.entries(switches).forEach(([k,elm])=>{
+      elm.addEventListener('click', ()=>{
+        const on = !elm.classList.contains('on');
+        toggleSwitch(elm,on);
+        const key = { autoMatch:'sa_autoMatch', history:'sa_showHistory', leaderboard:'sa_showLeaderboard', twofa:'sa_2fa' }[k];
+        localStorage.setItem(key, on);
+        touchSaved();
+      });
+    });
+
+    // Save account
+    el('saveAccount').addEventListener('click', ()=>{
+      localStorage.setItem('sa_name', el('nameInput').value.trim() || 'Uzma');
+      localStorage.setItem('sa_email', el('emailInput').value.trim() || 'uzma@example.com');
+      localStorage.setItem('sa_phone', el('phoneInput').value.trim() || '');
+      el('displayNameLeft').innerText = localStorage.getItem('sa_name');
+      el('displayEmailLeft').innerText = localStorage.getItem('sa_email');
+      touchSaved();
+      alert('Account settings saved locally (mock).');
+    });
+    el('resetAccount').addEventListener('click', ()=>{
+      el('nameInput').value = localStorage.getItem('sa_name') || 'Uzma';
+      el('emailInput').value = localStorage.getItem('sa_email') || 'uzma@example.com';
+      el('phoneInput').value = localStorage.getItem('sa_phone') || '';
+    });
+
+    // Save donation preferences
+    el('saveDonation').addEventListener('click', ()=>{
+      const chosen = Array.from(document.querySelectorAll('.cat:checked')).map(i=>i.value);
+      localStorage.setItem('sa_categories', JSON.stringify(chosen));
+      localStorage.setItem('sa_city', el('cityInput').value.trim());
+      touchSaved();
+      alert('Donation preferences saved locally (mock).');
+    });
+
+    // Change password mock
+    el('changePasswordBtn').addEventListener('click', ()=> el('modalChangePassword').style.display = 'flex');
+    el('closeChangePassword').addEventListener('click', ()=> el('modalChangePassword').style.display = 'none');
+    el('saveChangePassword').addEventListener('click', ()=>{
+      const n = el('newPassword').value; const c = el('confirmPassword').value;
+      if(!n || n.length < 6){ alert('Password must be at least 6 characters.'); return; }
+      if(n !== c){ alert('Passwords do not match.'); return; }
+      localStorage.setItem('sa_password_last_changed', new Date().toISOString());
+      el('modalChangePassword').style.display = 'none';
+      touchSaved();
+      alert('Password changed locally (mock). In production call backend.');
+    });
+
+    // Deactivate / delete
+    el('deactivateBtn').addEventListener('click', ()=>{
+      openConfirm('Deactivate account', 'Deactivate your account? You can reactivate later by logging in.', ()=>{
+        localStorage.setItem('sa_deactivated','true'); touchSaved(); alert('Account deactivated (mock).');
+      });
+    });
+    el('deleteBtn').addEventListener('click', ()=>{
+      openConfirm('Delete account', 'Delete your account and all local data permanently. This cannot be undone.', ()=>{
+        const theme = localStorage.getItem('sa_theme'); localStorage.clear(); if(theme) localStorage.setItem('sa_theme', theme);
+        alert('Account deleted locally (mock). In production call backend to remove user data.'); location.reload();
+      }, true);
+    });
+
+    // Confirm dialog helper
+    function openConfirm(title,message,onOk){
+      el('confirmTitle').innerText = title;
+      el('confirmMessage').innerText = message;
+      el('okConfirm').onclick = ()=> { el('modalConfirm').style.display = 'none'; onOk && onOk(); };
+      el('cancelConfirm').onclick = ()=> el('modalConfirm').style.display = 'none';
+      el('modalConfirm').style.display = 'flex';
+    }
+
+    function touchSaved(){
+      const now = new Date().toLocaleString();
+      el('lastSaved').innerText = now;
+      localStorage.setItem('sa_last_saved', new Date().toISOString());
+    }
+
+    // Close modals by backdrop or Escape
+    document.querySelectorAll('.modal-backdrop').forEach(back => {
+      back.addEventListener('click', e => { if(e.target === back) back.style.display = 'none'; });
+    });
+    window.addEventListener('keydown', e => { if(e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m=>m.style.display='none'); });
+
+    // Quick link to view-profile (local convenience)
+    document.querySelector('#displayNameLeft').addEventListener('click', ()=> { window.location.href = 'view-profile.html'; });
+
+    // Initialize quick avatar
+    (function initQuickAvatar(){
+      const raw = localStorage.getItem('sa_profile');
+      const name = raw ? JSON.parse(raw).name : localStorage.getItem('sa_name') || 'Uzma';
+      const initial = (name && name.charAt(0).toUpperCase()) || 'U';
+      const qa = document.getElementById('quickAvatar');
+      qa.textContent = initial;
+    })();
+
+    // Ensure dropdown menu doesn't throw if elements missing
+    if(!toggle || !menu){
+      // no-op, but safe
+    }
+
+  </script>
+</body>
+</html>

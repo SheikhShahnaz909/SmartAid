@@ -1,14 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Smart Aid: real-time community donation platform</title>
+
   <style>
-    /* [CSS styles remain the same as the original file] */
     :root{
-      --green-900: #114b2b;
-      --green-700: #185e34;
+      --green-900: #164d27;
+      --green-700: #2b6643;
       --green-500: #37a264;
       --green-300: #9be0b5;
       --accent: #1e7a43;
@@ -25,11 +27,9 @@
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-family: Inter, system-ui;
       background: linear-gradient(180deg, #eaf8ef 0%, #f7fff9 100%);
       color:#08321b;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
       line-height:1.45;
     }
 
@@ -43,7 +43,6 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:16px;
     }
     .brand{
       display:flex;
@@ -52,22 +51,17 @@
       text-decoration:none;
       color:var(--green-900);
     }
-    .logo {
+    .logo-img{
       width:52px;
       height:52px;
       border-radius:10px;
-      background: linear-gradient(135deg,var(--green-500),var(--green-700));
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#fff;
-      font-weight:700;
+      object-fit:cover;
       box-shadow: var(--card-shadow);
     }
+
     nav.main-nav{
       display:flex;
       gap:12px;
-      align-items:center;
     }
     nav.main-nav a{
       text-decoration:none;
@@ -75,23 +69,19 @@
       padding:8px 12px;
       border-radius:8px;
       font-weight:600;
-      font-size:14px;
     }
     nav.main-nav a.cta{
       background:var(--green-700);
       color:#fff;
       padding:10px 14px;
-      box-shadow: 0 6px 18px rgba(30,122,67,0.18);
     }
-    /* Hero */
+
+    /* HERO */
     .hero{
       margin-top:18px;
       background: linear-gradient(90deg,var(--green-300), #e7f7ee);
       border-radius: var(--radius);
       padding:28px;
-      display:flex;
-      gap:24px;
-      align-items:center;
       box-shadow: var(--card-shadow);
     }
     .eyebrow{
@@ -104,18 +94,10 @@
       font-size:13px;
       margin-bottom:14px;
     }
-    h1{
-      margin:0 0 14px 0;
-      font-size:28px;
-      color:var(--green-900);
-    }
-    p.lead{
-      margin:0 0 18px 0;
-      color:#204d34;
-      opacity:0.95;
-    }
+    h1{margin:0 0 14px;font-size:28px;color:var(--green-900);}
+    p.lead{margin:0 0 18px;color:#204d34;}
 
-    /* Feature cards */
+    /* FEATURES */
     .features{
       display:grid;
       grid-template-columns:repeat(3,1fr);
@@ -123,266 +105,256 @@
       margin-top:20px;
     }
     .card{
-      background: white;
+      width: 516px;
+      height: auto;
+      background:white;
       border-radius:12px;
       padding:18px;
-      box-shadow: var(--card-shadow);
-      min-height:120px;
+      box-shadow:var(--card-shadow);
       display:flex;
       flex-direction:column;
-      gap:12px;
     }
     .icon{
       width:44px;
       height:44px;
       border-radius:10px;
-      display:inline-flex;
+      display:flex;
       align-items:center;
       justify-content:center;
-      font-weight:700;
       color:white;
+      font-size:20px;
     }
-    .icon.find{ background: linear-gradient(135deg,var(--green-500),var(--green-700)); }
-    .icon.offer{ background: linear-gradient(135deg,#4aa77a,#2f9a6a); }
-    .icon.donate{ background: linear-gradient(135deg,#1e7a43,#2f9a6a); color:#4aa77a;}
-    .card h3{ margin:0; font-size:16px; color:var(--green-900); }
-    .card p{ margin:0; color:#2f5c45; font-size:14px; opacity:0.95; }
-    .card .foot{
-      margin-top:auto;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-    }
+    .icon.find{background:linear-gradient(135deg,var(--green-500),var(--green-700));}
+    .icon.offer{background:linear-gradient(135deg,#4aa77a,#2f9a6a);}
+    .icon.donate{background:linear-gradient(135deg,#1e7a43,#2f9a6a);}
     .small-btn{
       padding:8px 12px;
-      border-radius:8px;
       background:var(--green-700);
-      color:#fff;
-      font-weight:700;
+      color:white;
       text-decoration:none;
-      font-size:13px;
+      border-radius:8px;
+      font-weight:700;
     }
 
-    .logo-img{
-      width:50px;
-      height:50px;
-    }
-
-    /* Info strip */
+    /* IMPACT */
     .info-strip{
       margin-top:20px;
-      padding:14px;
+      padding:18px;
       border-radius:12px;
       background: linear-gradient(90deg,#fff,#f6fff5);
       display:flex;
-      gap:18px;
-      align-items:center;
       justify-content:space-between;
-      box-shadow: var(--card-shadow);
-    }
-    /* Footer Styles */
-    .footer-container{
-        margin-top:60px;
-        background: var(--footer-bg);
-        color: var(--footer-text);
-        border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(8,40,20,0.15);
-        position: relative;
-    }
-    .footer-content {
-        padding: 40px 40px 30px 40px;
-        display: grid;
-        grid-template-columns: 2.5fr 1fr 1fr;
-        gap: 40px;
-        font-size: 14px;
-        max-width: var(--max-width);
-        margin: 0 auto;
-    }
-    .footer-left h4{
-        margin: 0 0 10px 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--footer-text);
-    }
-    .footer-left p{
-        opacity: 0.8;
-        line-height: 1.6;
-        margin-top: 10px;
-        max-width: 350px;
-    }
-    .footer-left .social-icons{
-        margin-top: 20px;
-        display: flex;
-        gap: 15px;
-    }
-    .footer-left .social-icons a{
-        color: var(--footer-text);
-        opacity: 0.8;
-        font-size: 20px;
-        transition: opacity 0.2s;
-        text-decoration: none;
-    }
-    .footer-left .social-icons a:hover{
-        opacity: 1;
-    }
-    .back-to-top-btn{
-        margin-top: 25px;
-        padding: 10px 18px;
-        border: 2px solid var(--footer-text);
-        color: var(--footer-text);
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 13px;
-        transition: background 0.2s;
-    }
-    .back-to-top-btn:hover{
-        background: rgba(255,255,255,0.1);
-    }
-    .footer-links div h5{
-        margin: 0 0 15px 0;
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--footer-text);
-    }
-    .footer-links ul{
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .footer-links li{
-        margin-bottom: 8px;
-    }
-    .footer-links li a{
-        color: var(--footer-text);
-        opacity: 0.8;
-        text-decoration: none;
-        font-size: 14px;
-        transition: opacity 0.2s;
-    }
-    .footer-links li a:hover{
-        opacity: 1;
-        text-decoration: underline;
-    }
-    .footer-bottom-strip{
-        background: var(--orange-accent);
-        text-align: center;
-        padding: 8px;
-        color: var(--green-900);
-        font-size: 13px;
-        border-bottom-left-radius: var(--radius);
-        border-bottom-right-radius: var(--radius);
-        font-weight: 600;
+      box-shadow:var(--card-shadow);
     }
 
-    @media (max-width: 900px) {
-      .footer-content {
-          grid-template-columns: 1fr;
-          padding: 40px 20px 30px 20px;
-      }
+    /* FOOTER */
+    .footer-container{
+      margin-top:60px;
+      background: var(--footer-bg);
+      color: var(--footer-text);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(8,40,20,0.15);
+    }
+
+    .footer-content {
+      padding: 40px 40px 30px 40px;
+      display: grid;
+      grid-template-columns: 2.5fr 1fr 1fr;
+      gap: 40px;
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .footer-left h4{
+      font-size:18px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .footer-left p{
+      opacity:0.8;
+      margin-top:12px;
+      max-width:300px;
+    }
+
+    .social-icons{
+      display:flex;
+      gap:15px;
+      margin-top:20px;
+    }
+    .social-icons a{
+      color:var(--footer-text);
+      opacity:0.75;
+      font-size:20px;
+      text-decoration:none;
+    }
+    .social-icons a:hover{opacity:1;}
+
+    .back-to-top-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-top:25px;
+      padding:10px 18px;
+      border:2px solid var(--footer-text);
+      color:var(--footer-text);
+      text-decoration:none;
+      border-radius:8px;
+      font-weight:600;
+    }
+
+    .footer-links h5{
+      font-size:16px;
+      font-weight:700;
+    }
+    .footer-links ul{
+      padding:0;margin:0;list-style:none;
+    }
+    .footer-links ul li{margin-bottom:8px;}
+    .footer-links ul li a{
+      color:var(--footer-text);
+      opacity:0.8;
+      text-decoration:none;
+    }
+    .footer-links ul li a:hover{text-decoration:underline;opacity:1;}
+
+    .footer-bottom-strip{
+      background: var(--orange-accent);
+      padding: 8px;
+      text-align:center;
+      color:var(--green-900);
+      font-weight:600;
+      border-bottom-left-radius:var(--radius);
+      border-bottom-right-radius:var(--radius);
     }
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <header class="main-header">
-      <a class="brand" href="homepage.html" aria-label="Smart Aid Home">
-             <div class="logo-img"> <img src="images/circle-logo.png" alt="Smart Aid Logo" class="logo-img" />
-  </div>
-        <div>
-          <div style="font-weight:800;font-size:16px">Smart Aid</div>
-          <div style="font-size:12px;color:var(--green-700);margin-top:2px">real-time community donation platform</div>
-        </div>
-      </a>
 
-      <nav class="main-nav" aria-label="Primary navigation">
-        <!-- LINK FIXED -->
-        <a href="leaderboard.php">Leaderboard</a>
-        <a href="help.html">Help</a>
+<div class="wrap">
+
+  <header class="main-header">
+    <a class="brand" href="#">
+      <img src="circle-logo.png" class="logo-img">
+      <div>
+        <div style="font-size:16px;font-weight:800;">Smart Aid</div>
+        <div style="font-size:12px;color:var(--green-700);">real-time community donation platform</div>
+      </div>
+    </a>
+
+    <nav class="main-nav">
+      <a href="help.html">Help</a>
+      <a class="cta" href="role_selection.html">Sign Up</a>
+
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Community • Real-time • Local</span>
+        <h1>Smart Aid — Connecting surplus with need instantly</h1>
+        <p class="lead">Connecting donors, pedestrians, and the needy to reduce food waste. Fast — local — safe.</p>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features">
+
+      <!-- LEADERBOARD -->
+      <article class="card">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="icon find">🏆</div>
+          <h3>Leaderboard</h3>
+        </div>
+        <p>Top contributors inspiring change and spreading kindness every day.</p>
+        <div class="foot">
+          <a class="small-btn" href="leaderboard.php">View Leaderboard</a>
+        </div>
+      </article>
+
+      <!-- FEED (INSTAGRAM-STYLE) -->
+      <article class="card">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="icon donate">📰</div>
+          <h3>Feed</h3>
+        </div>
+        <p>See community posts, updates, and real-time stories from donors and helpers.</p>
+        <div class="foot">
+          <a class="small-btn" href="feed.html">View Feed</a>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- OUR IMPACT -->
+    <section class="info-strip">
+      <div>
+        <h3 style="margin:0;color:var(--green-900);">🌍 Our Impact</h3>
+        <p style="margin:6px 0 0;">Together, we reduce food waste and spread kindness.</p>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:26px;font-weight:800;color:var(--green-700);">12,540+</div>
+        <div style="font-size:13px;">Help Delivered So Far</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="footer-container">
+
+  <div class="footer-content">
+
+    <!-- LEFT -->
+    <div class="footer-left">
+      <h4>
+        <svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:var(--orange-accent);">
+          <path d="M12 2L2 22H22L12 2ZM12 11.5L8.5 19H15.5L12 11.5Z"/>
+        </svg>
+        SMART AID
+      </h4>
+
+      <p>Empowering communities with a real-time platform to connect surplus food with those in need, reducing waste and fighting hunger.</p>
+
+      <div class="social-icons">
+  <a href="https://x.com/SmartAid2025"><i class="fa-brands fa-x-twitter"></i></a>
+
+  <a href="https://www.facebook.com/profile.php?id=61584193043021"><i class="fa-brands fa-facebook-f"></i></a>
+  <a href="https://www.instagram.com/smartaid_donation/"><i class="fa-brands fa-instagram"></i></a>
+</div>
+
+
+      <a class="back-to-top-btn" href="#top">↑ Back to Top</a>
+    </div>
+
+    <!-- CENTER LINKS -->
+    <div class="footer-links">
+      <h5>Site Map</h5>
+      <ul>
+        <li><a href="homepage.html">Homepage</a></li>
+        <li><a href="leaderboard.php">Leaderboard</a></li>
+        <li><a href="help.html">How It Works</a></li>
         
-        <a class="cta" href="role_selection.html">Sign Up</a>
-      </nav>
-    </header>
-
-    <main>
-      <section class="hero" aria-labelledby="hero-heading">
-        <div class="hero-left">
-          <span class="eyebrow">Community • Real-time • Local</span>
-          <h1 id="hero-heading">Smart Aid — Connecting surplus with need instantly</h1>
-          <p class="lead">Connecting donors,pedestrians,and the needy to reduce food waste. Fast — local — safe.</p>
-        </div>
-      </section>
-
-      
-
-  <footer class="footer-container">
-    
-    <div class="footer-content">
-        <div class="footer-left">
-            <h4>
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 28px; height: 28px; fill: var(--orange-accent);">
-                    <path d="M12 2L2 22H22L12 2ZM12 11.5L8.5 19H15.5L12 11.5Z"/>
-                </svg>
-                SMART AID
-            </h4>
-            <p>Empowering communities with a real-time platform to connect surplus food with those in need, reducing waste and fighting hunger.</p>
-            
-            <div class="social-icons">
-                <a href="#" aria-label="X (formerly Twitter)">X</a> 
-                <a href="#" aria-label="LinkedIn">in</a> 
-                <a href="#" aria-label="Instagram">f</a>
-                <a href="#" aria-label="Facebook">o</a>
-            </div>
-
-            <a class="back-to-top-btn" href="#top">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="18 15 12 9 6 15"></polyline>
-                </svg>
-                BACK TO TOP
-            </a>
-        </div>
-
-        <div class="footer-links">
-            <div>
-                <h5>Site Map</h5>
-                <ul>
-                    <li><a href="homepage.html">Homepage</a></li>
-                    <li><a href="leaderboard.php">Leaderboard</a></li>
-                    <li><a href="how-it-works.html">How It Works</a></li>
-                    <li><a href="#news">News & Updates</a></li>
-                    <li><a href="#careers">Careers</a></li>
-                    <li><a href="#contact">Contact Us</a></li>
-                    <li><a href="role_selection.php">Portal</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-links">
-            <div>
-                <h5>Legal</h5>
-                <ul>
-                    <li><a href="#privacy">Privacy Policy</a></li>
-                    <li><a href="#terms">Terms of Services</a></li>
-                    <li><a href="#security">Security</a></li>
-                    <li><a href="#disclosure">Legal Disclosure</a></li>
-
-                </ul>
-            </div>
-        </div>
+        <li><a href="contact_us.html">Contact Us</a></li>
+      </ul>
     </div>
 
-    <div class="footer-bottom-strip">
-        Copyright © 2024, SmartAid. All Rights Reserved.
-    </div>
-  </footer>
+ 
 
-  
+  </div>
+
+  <div class="footer-bottom-strip">
+    Copyright © 2025, SmartAid.
+  </div>
+
+</footer>
+
 </body>
 </html>
