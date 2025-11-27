@@ -1,59 +1,59 @@
 <?php
 // mailer_config.php
-// Gmail SMTP configuration using PHPMailer
+
+// This line is essential and relies on the successful Composer installation
+require 'vendor/autoload.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/vendor/autoload.php';
-
-// --- YOUR GMAIL SMTP SETTINGS (CORRECTED) ---
-define('SMTP_HOST', 'smtp.gmail.com');      // <--- FIXED
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'sheikhshhnz.09@gmail.com');  // your Gmail
-define('SMTP_PASS', 'zzatnaswqafikada');          // <--- REMOVE ALL SPACES
-define('SMTP_FROM_EMAIL', 'sheikhshhnz.09@gmail.com');
-define('SMTP_FROM_NAME', 'SmartAid');
-// --------------------------------------------
-
 /**
- * send_email($to, $subject, $htmlBody)
+ * Sends an email using Gmail's SMTP server.
+ * @param string $to The recipient email address.
+ * @param string $subject The email subject.
+ * @param string $htmlBody The email body in HTML format.
+ * @return bool True on success, false on failure (error is logged).
  */
-function send_email($to, $subject, $htmlBody) {
-
-    // We are NOT in dev mode anymore (you have real SMTP)
+function send_email(string $to, string $subject, string $htmlBody): bool
+{
     $mail = new PHPMailer(true);
 
     try {
-        // SMTP settings
+        // Server settings (using Gmail SMTP)
         $mail->isSMTP();
-        $mail->Host = SMTP_HOST;
-        $mail->SMTPAuth = true;
-        $mail->Username = SMTP_USER;
-        $mail->Password = SMTP_PASS;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = SMTP_PORT;
+        $mail->Host       = 'smtp.gmail.com'; 
+        $mail->SMTPAuth   = true;
+        
+        // **!!! CRITICAL: REPLACE WITH YOUR GMAIL CREDENTIALS !!!**
+        // This must be your full Gmail address
+        $mail->Username   = 'smrtaid@gmail.com'; 
+        
+        // This must be an App Password generated from your Google Account settings,
+        // NOT your regular Gmail password, for security.
+        $mail->Password   = 'wwrdyrsukmpoxqkl'; 
+        
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use SMTPS (465)
+        $mail->Port       = 465;
 
-        // Email headers
-        $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+        // Sender details (The email the user sees it came from)
+        $mail->setFrom('smrtaid@gmail.com', 'Smart Aid Password Reset');
         $mail->addAddress($to);
 
         // Content
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $htmlBody;
-
+        $mail->AltBody = strip_tags($htmlBody); // Plain text fallback
+        //$mail->addReplyTo($to, $name);
         $mail->send();
         return true;
 
     } catch (Exception $e) {
-        // Log error
-        if (!is_dir(__DIR__ . '/logs')) mkdir(__DIR__ . '/logs', 0700, true);
-        file_put_contents(
-            __DIR__ . '/logs/reset_links.log',
-            date('c') . " MAIL ERROR: {$mail->ErrorInfo}\nTO: $to\nSUBJECT: $subject\n$htmlBody\n\n",
-            FILE_APPEND
-        );
+        // Log the detailed error (good for debugging)
+        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        // Return false to indicate failure
         return false;
     }
 }
+?>

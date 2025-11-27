@@ -1,12 +1,27 @@
 <?php
+// reporter_homepage.php
+
 session_start();
-if (!isset($_SESSION['user_id'])) { header("Location: reporter_login.php"); exit(); }
-$userName = $_SESSION['user_name'];
-$initial = strtoupper($userName[0]);
+
+// 🔐 STRICT BUT SIMPLE ACCESS CONTROL: reporter only
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'reporter') {
+    header("Location: reporter_login.php");
+    exit();
+}
+
+// 2. DATA SETUP: Fetch user data for display
+$rawUserName = $_SESSION['user_name'] ?? ($_SESSION['user_email'] ?? 'Reporter');
+$userName    = htmlspecialchars($rawUserName, ENT_QUOTES, 'UTF-8');
+$display_name = $userName . '!';
+
+$initial = strtoupper($userName[0] ?? 'R');
+$dashboard_link = 'reporter_homepage.php';
 ?>
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Smart Aid - Reporter Dashboard</title>
@@ -32,7 +47,7 @@ $initial = strtoupper($userName[0]);
       margin:0;
       font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       background: linear-gradient(180deg, #eaf8ef 0%, #f7fff9 100%);
-      color:#08321b;
+      color:var(--green-900);
       line-height:1.45;
     }
 
@@ -122,7 +137,6 @@ $initial = strtoupper($userName[0]);
     .dropdown a:last-child{ border-bottom: none; }
     .dropdown a:hover{ background:var(--muted); }
 
-    /* Hero */
     .hero{
       margin-top:18px;
       background: linear-gradient(90deg,var(--green-300), #e7f7ee);
@@ -148,11 +162,9 @@ $initial = strtoupper($userName[0]);
 
     .features{
       display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:16px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap:20px;
       margin-top:20px;
-      justify-items:center;
-      align-items:flex-start;
     }
     .card{
       background:white;
@@ -178,7 +190,11 @@ $initial = strtoupper($userName[0]);
     }
     .icon.report{ background: linear-gradient(135deg,var(--green-500),var(--green-700)); }
     .icon.find{ background: linear-gradient(135deg,#4aa77a,#2f9a6a); }
-    .icon.alerts{ background: linear-gradient(135deg,#1e7a43,#2f9a6a); }
+
+    .card p {
+        color: #08321b;
+        margin-top: 5px;
+    }
 
     .small-btn{
       padding:8px 12px;
@@ -188,42 +204,10 @@ $initial = strtoupper($userName[0]);
       font-weight:700;
       text-decoration:none;
       font-size:13px;
+      margin-top: auto;
+      display: inline-block;
     }
 
-    /* Footer */
-    .footer-container{
-      margin-top:60px;
-      background: var(--footer-bg);
-      color: var(--footer-text);
-      border-radius: var(--radius);
-      box-shadow: 0 10px 30px rgba(8,40,20,0.15);
-      position: relative;
-    }
-    .footer-content {
-      padding: 40px 40px 30px 40px;
-      display: grid;
-      grid-template-columns: 2.5fr 1fr 1fr;
-      gap: 40px;
-      font-size: 14px;
-      max-width: var(--max-width);
-      margin: 0 auto;
-    }
-    .footer-left h4{margin:0 0 10px 0; font-size:18px;font-weight:800;color:var(--footer-text);}
-    .footer-bottom-strip{
-      background: var(--orange-accent);
-      text-align:center;
-      padding:8px;
-      color:var(--green-900);
-      font-size:13px;
-      border-bottom-left-radius: var(--radius);
-      border-bottom-right-radius: var(--radius);
-      font-weight:600;
-    }
-
-    @media (max-width:720px){
-      .features{ grid-template-columns: 1fr; }
-      nav.main-nav{ gap:8px; }
-    }
     .footer-container{
       margin-top:60px;
       background: var(--footer-bg);
@@ -305,14 +289,19 @@ $initial = strtoupper($userName[0]);
       border-bottom-left-radius:var(--radius);
       border-bottom-right-radius:var(--radius);
     }
-  
+
+    @media (max-width:720px){
+      .features{ grid-template-columns: 1fr; }
+      nav.main-nav{ gap:8px; }
+      .footer-content {grid-template-columns: 1fr;gap:20px;}
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="main-header">
-      <a class="brand" href="#" aria-label="Smart Aid Home">
-        <img src="circle-logo.png" alt="Smart Aid Logo" class="logo-img" />
+      <a class="brand" href="<?php echo $dashboard_link; ?>" aria-label="Smart Aid Home">
+        <img src="images/circle-logo.png" alt="Smart Aid Logo" class="logo-img" />
         <div>
           <div style="font-weight:800;font-size:16px">Smart Aid</div>
           <div style="font-size:12px;color:var(--green-700);margin-top:2px">Reporter Dashboard</div>
@@ -320,16 +309,16 @@ $initial = strtoupper($userName[0]);
       </a>
 
       <nav class="main-nav">
-        <a href="help.html">Help</a>
-        <a href="nearby_needs.html">Nearby Needs</a>
-
+        <a href="help.php?home=reporter_homepage.php">Help</a>
         <div class="user-menu">
-          <div class="user-initial" id="userInitial" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdown">R ▾</div>
+          <div class="user-initial" id="userInitial" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdown">
+            <?php echo htmlspecialchars($initial, ENT_QUOTES, 'UTF-8'); ?> 
+          </div>
           <div class="dropdown" id="userDropdown" role="menu" aria-labelledby="userInitial">
-            <a href="view_profile.html" role="menuitem">View Profile</a>
-            <a href="my_reports.html" role="menuitem">My Reports</a>
-            <a href="settings.html" role="menuitem">Settings</a>
-            <a href="signout.php" role="menuitem">Sign Out</a>
+            <a href="reporter_profile.php" role="menuitem">View Profile</a>
+            <a href="reporter-settings.php" role="menuitem">Settings</a>
+            <a href="my_reports.php" role="menuitem">My Reports</a>
+            <a href="logout.php" role="menuitem">Log Out</a>
           </div>
         </div>
       </nav>
@@ -338,7 +327,7 @@ $initial = strtoupper($userName[0]);
     <main>
       <section class="hero">
         <div>
-          <h1>Welcome, <span id="reporterName">Reporter</span> 👋</h1>
+          <h1>Welcome, <span id="reporterName"><?php echo $display_name; ?></span> 👋</h1>
           <p class="lead">Track, report, and connect communities in real time. Your efforts make a difference every day.</p>
         </div>
       </section>
@@ -351,30 +340,28 @@ $initial = strtoupper($userName[0]);
           </div>
           <p>Spot someone in need? Report instantly with location and details.</p>
           <div class="foot">
-            <a class="small-btn" href="report_form.html">Report Now</a>
+            <a class="small-btn" href="report_need_form.php">Report Now</a>
           </div>
         </article>
 
         <article class="card">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="icon find">🍽️</div>
-            <h3>Find Food</h3>
-          </div>
-          <p>Locate nearby food distributions, community kitchens, or donor offers available right now.</p>
-          <div class="foot">
-            <a class="small-btn" href="find_food.html">Find Food</a>
-          </div>
-        </article>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="icon find">🍽️</div>
+    <h3>Community Feed</h3>
+  </div>
+  <p>See what other donors in the community are contributing.</p>
+  <div class="foot">
+    <a class="small-btn" href="feed.php?home=reporter_homepage.php">View Feed</a>
+  </div>
+</article>
+
+
       </section>
     </main>
   </div>
 
-  <!-- FOOTER -->
 <footer class="footer-container">
-
-  <div class="footer-content">
-
-    <!-- LEFT -->
+  <div class="footer-content"> 
     <div class="footer-left">
       <h4>
         <svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:var(--orange-accent);">
@@ -382,82 +369,53 @@ $initial = strtoupper($userName[0]);
         </svg>
         SMART AID
       </h4>
-
       <p>Empowering communities with a real-time platform to connect surplus food with those in need, reducing waste and fighting hunger.</p>
-
       <div class="social-icons">
-        <a href="#">X</a>
-        <a href="#">in</a>
-        <a href="#">f</a>
-        <a href="#">o</a>
+        <a href="https://x.com/SmartAid2025"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="https://www.facebook.com/profile.php?id=61584193043021"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com/smartaid_donation/"><i class="fa-brands fa-instagram"></i></a>
       </div>
-
       <a class="back-to-top-btn" href="#top">↑ Back to Top</a>
     </div>
 
-    <!-- CENTER LINKS -->
     <div class="footer-links">
       <h5>Site Map</h5>
       <ul>
-        <li><a href="#">Homepage</a></li>
-        <li><a href="#">Leaderboard</a></li>
-        <li><a href="#">How It Works</a></li>
-        <li><a href="#">Contact Us</a></li>
-        
+        <li><a href="<?php echo $dashboard_link; ?>">Homepage</a></li>
+        <li><a href="leaderboard.php?home=reporter_homepage.php">Leaderboard</a></li>
+        <li><a href="help.php?home=reporter_homepage.php">Help</a></li>
+        <li><a href="contact_us.php?home=reporter_homepage.php">Contact Us</a></li>  
       </ul>
     </div>
-
   </div>
-
   <div class="footer-bottom-strip">
     Copyright © 2025, SmartAid.
   </div>
-
 </footer>
 
+<script>
+  const userInitial = document.getElementById('userInitial');
+  const userDropdown = document.getElementById('userDropdown');
+  userInitial.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const isShown = userDropdown.classList.toggle('show');
+    userInitial.setAttribute('aria-expanded', isShown ? 'true' : 'false');
+  });
 
-
-
-  <script>
-    // Populate reporter name/initial from localStorage or PHP session fallback
-    const email = localStorage.getItem('reporterEmail');
-    if(email){
-      const initial = email.charAt(0).toUpperCase();
-      const namePart = email.split('@')[0];
-      document.getElementById('userInitial').textContent = initial + ' ▾';
-      document.getElementById('reporterName').textContent = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    } else {
-      // if PHP session available, the server-rendered initial will already be present
-      const phpInitial = '<?php echo $initial; ?>';
-      if(phpInitial){
-        document.getElementById('userInitial').textContent = phpInitial + ' ▾';
-      }
+  document.addEventListener('click', (e)=>{
+    const menu = document.querySelector('.user-menu');
+    if(menu && !menu.contains(e.target)){
+      userDropdown.classList.remove('show');
+      userInitial.setAttribute('aria-expanded', 'false');
     }
+  });
 
-    // Dropdown toggle
-    const userInitial = document.getElementById('userInitial');
-    const userDropdown = document.getElementById('userDropdown');
-
-    userInitial.addEventListener('click', (e)=>{
-      const isShown = userDropdown.classList.toggle('show');
-      userInitial.setAttribute('aria-expanded', isShown ? 'true' : 'false');
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e)=>{
-      if(!document.querySelector('.user-menu').contains(e.target)){
-        userDropdown.classList.remove('show');
-        userInitial.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    // Keyboard accessibility: close on Escape
-    document.addEventListener('keydown', (e)=>{
-      if(e.key === 'Escape'){
-        userDropdown.classList.remove('show');
-        userInitial.setAttribute('aria-expanded', 'false');
-      }
-    });
-  </script>
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      userDropdown.classList.remove('show');
+      userInitial.setAttribute('aria-expanded', 'false');
+    }
+  });
+</script>
 </body>
 </html>

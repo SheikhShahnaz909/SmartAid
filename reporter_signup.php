@@ -133,6 +133,64 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') {
             text-decoration: underline;
         }
 
+ /* CORRECTED CSS for the Password Toggle */
+
+.password-container {
+    position: relative; 
+    
+}
+
+.password-container input {
+    width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px; 
+            background-color: rgba(255, 255, 255, 0.9); 
+            color: #333;
+            font-size: 1em;
+    /* Ensure input takes up the full width, leaving room for the icon */
+    padding-right: 45px !important;
+    width: 100%; /* Increased padding slightly for better spacing */
+}
+
+.password-container label{
+    text-align: left;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95em;
+}
+.toggle-password {
+    position: absolute;
+    top: 50%; /* Moves the top edge of the button halfway down the container */
+    left: 330px;
+    
+    /* CRITICAL FIX: Shifts the button up by half its own height to perfectly center it */
+    transform: translateY(-30%); 
+    /* Styling */
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em; /* Slightly larger for better visual alignment */
+    padding: 0;
+    line-height: 0.5;
+    color: #666; 
+    z-index: 10;
+    display: flex; /* Ensure the content (the eye icon) is centered if using different text */
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* Allows translateY(-50%) to be more reliable */
+}
+
+.toggle-password:focus {
+    outline: none;
+}
+
+.toggle-password:hover{
+    background:none;
+}
+
         /* Error boxes */
         .error-message {
             color: var(--text-color);
@@ -149,7 +207,27 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') {
 
 </head>
 <body>
-
+    <!-- BACK ARROW -->
+<a href="role_selection.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255,255,255,0.2);
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    backdrop-filter: blur(5px);
+    text-decoration: none;
+">
+    <span style="
+        font-size: 25px;
+        color: white;
+        font-weight: 900;
+    ">&larr;</span>
+</a>
     <div class="login-container">
         <div class="logo-area">
             <div class="logo-icon"><img src="images/circle-logo.png"></div>
@@ -174,11 +252,18 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') {
                 <input type="email" id="email" name="email" required placeholder="name@example.com">
             </div>
 
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="Min 8 chars, incl. capital, number, symbol">
-                <div id="password-error-box" class="error-message"></div>
-            </div>
+            <div class="password-container"> 
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required placeholder="Enter your password">
+    
+    <button type="button" id="togglePassword" class="toggle-password" aria-label="Toggle password visibility">
+        👁️
+    </button>
+
+    <!-- 🔹 Add this: password error box -->
+    <div id="password-error-box" class="error-message"></div>
+</div>
+
 
             <div class="input-group">
                 <label for="phone">Phone Number</label>
@@ -208,11 +293,13 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') {
         }
 
         function clearValidationErrors() {
-            document.getElementById('name-error-box').style.display = 'none';
-            document.getElementById('password-error-box').style.display = 'none';
-            document.getElementById('phone-error-box').style.display = 'none';
-            document.getElementById('email-error-box').style.display = 'none';
-        }
+    const ids = ['name-error-box', 'password-error-box', 'phone-error-box', 'email-error-box'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
+
 
         function validateReporterSignupForm() {
             clearValidationErrors();
@@ -253,6 +340,24 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'reporter') {
 
             return valid;
         }
+        document.addEventListener('DOMContentLoaded', function () {
+        const passwordInput = document.getElementById('password');
+        const toggleButton = document.getElementById('togglePassword');
+
+        if (toggleButton && passwordInput) {
+            toggleButton.addEventListener('click', function () {
+                // Toggle the type attribute
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Change the icon visual
+                this.setAttribute('aria-label', type === 'password' ? 'Show password' : 'Hide password');
+                this.textContent = (type === 'password') ? '👁️' : '🙈'; 
+            });
+        }
+    });
+
+        
     </script>
 
 </body>

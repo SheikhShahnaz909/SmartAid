@@ -7,6 +7,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <style>
+        .back-btn {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    background: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    color: var(--green-900);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: 0.3s ease;
+    font-size: 1.6em;
+}
+
+.back-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
         /* [CSS styles remain the same as the original file] */
         :root {
             --green-900: #114b2b;
@@ -168,6 +191,11 @@
     </style>
 </head>
 <body>
+    <!-- Back Button -->
+<a href="homepage.php" class="back-btn">
+    <span class="material-icons-outlined">arrow_back</span>
+</a>
+
     <div class="container">
         
         <div class="logo-area">

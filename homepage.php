@@ -1,3 +1,88 @@
+<?php
+session_start();
+
+// ---- DATABASE CONNECTION ----
+$servername = "127.0.0.1";
+$username   = "root";
+$password   = "";
+$dbname     = "smartaid_db";
+$port       = 3307;
+
+// default display values (shown if DB is down)
+$total_deliveries = '0+';
+$total_users      = '0+';
+$total_donations  = '0+';
+
+$conn = new mysqli($servername, $username, $password, $dbname, $port);
+
+if (!$conn->connect_error) {
+
+    // 1) Aid Deliveries = number of reports that have been accepted by a donor
+    // (accepted_by is NOT NULL). You can change this to status='Resolved' if you prefer.
+    $sql_deliveries = "
+        SELECT COUNT(*) AS total_count
+        FROM reports
+        WHERE accepted_by IS NOT NULL
+    ";
+    if ($result_deliveries = $conn->query($sql_deliveries)) {
+        if ($row = $result_deliveries->fetch_assoc()) {
+            $total_deliveries = number_format((int)$row['total_count']) . '+';
+        }
+        $result_deliveries->free();
+    }
+
+    // 2) Active Users = donors + reporters in users table
+    $sql_users = "
+        SELECT COUNT(*) AS user_count
+        FROM users
+        WHERE role IN ('donor','reporter')
+    ";
+    if ($result_users = $conn->query($sql_users)) {
+        if ($row = $result_users->fetch_assoc()) {
+            $total_users = number_format((int)$row['user_count']) . '+';
+        }
+        $result_users->free();
+    }
+
+    // 3) Items Donated = count of donation records
+    // (each row in donations table is one donation posted)
+    $sql_donations = "
+        SELECT COUNT(*) AS total_donations
+        FROM donations
+    ";
+    if ($result_donations = $conn->query($sql_donations)) {
+        if ($row = $result_donations->fetch_assoc()) {
+            $total_donations = number_format((int)$row['total_donations']) . '+';
+        }
+        $result_donations->free();
+    }
+
+    $conn->close();
+}
+
+// --- End of Database Logic ---
+
+// Default home if nothing else is known
+$home_link = 'homepage.php';
+
+// If ?home= is passed in the URL, that ALWAYS wins
+if (isset($_GET['home'])) {
+    $allowed = ['homepage.php', 'donor_homepage.php', 'reporter_homepage.php'];
+    if (in_array($_GET['home'], $allowed, true)) {
+        $home_link = $_GET['home'];
+    }
+}
+// If no ?home=, fall back to logged-in role
+elseif (isset($_SESSION['user_role'])) {
+    if ($_SESSION['user_role'] === 'donor') {
+        $home_link = 'donor_homepage.php';
+    } elseif ($_SESSION['user_role'] === 'reporter') {
+        $home_link = 'reporter_homepage.php';
+    }
+}
+?>
+
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -8,6 +93,8 @@
   <title>Smart Aid: real-time community donation platform</title>
 
   <style>
+
+
     :root{
       --green-900: #164d27;
       --green-700: #2b6643;
@@ -97,6 +184,31 @@
     h1{margin:0 0 14px;font-size:28px;color:var(--green-900);}
     p.lead{margin:0 0 18px;color:#204d34;}
 
+    /* HIDE ALL LANGUAGES EXCEPT ENGLISH, KANNADA, HINDI */
+.goog-te-menu2-item div,
+.goog-te-menu2-item span {
+    display: none !important;
+}
+
+/* Show only English */
+.goog-te-menu2-item div[text="English"],
+.goog-te-menu2-item span[text="English"] {
+    display: block !important;
+}
+
+/* Show only Kannada */
+.goog-te-menu2-item div[text="Kannada"],
+.goog-te-menu2-item span[text="Kannada"] {
+    display: block !important;
+}
+
+/* Show only Hindi */
+.goog-te-menu2-item div[text="Hindi"],
+.goog-te-menu2-item span[text="Hindi"] {
+    display: block !important;
+}
+
+
     /* FEATURES */
     .features{
       display:grid;
@@ -142,8 +254,11 @@
       padding:18px;
       border-radius:12px;
       background: linear-gradient(90deg,#fff,#f6fff5);
-      display:flex;
-      justify-content:space-between;
+      /* This is the new grid layout for the 4 sections */
+      display:grid; 
+      grid-template-columns: 2fr repeat(3, 1fr); 
+      gap: 20px; 
+      align-items: center;
       box-shadow:var(--card-shadow);
     }
 
@@ -238,7 +353,7 @@
 
   <header class="main-header">
     <a class="brand" href="#">
-      <img src="circle-logo.png" class="logo-img">
+      <img src="images/circle-logo.png" class="logo-img">
       <div>
         <div style="font-size:16px;font-weight:800;">Smart Aid</div>
         <div style="font-size:12px;color:var(--green-700);">real-time community donation platform</div>
@@ -246,7 +361,7 @@
     </a>
 
     <nav class="main-nav">
-      <a href="help.html">Help</a>
+      <a href="help.php">Help</a>
       <a class="cta" href="role_selection.html">Sign Up</a>
 
     </nav>
@@ -262,10 +377,8 @@
       </div>
     </section>
 
-    <!-- FEATURES -->
     <section class="features">
 
-      <!-- LEADERBOARD -->
       <article class="card">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="icon find">🏆</div>
@@ -277,7 +390,6 @@
         </div>
       </article>
 
-      <!-- FEED (INSTAGRAM-STYLE) -->
       <article class="card">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="icon donate">📰</div>
@@ -285,21 +397,31 @@
         </div>
         <p>See community posts, updates, and real-time stories from donors and helpers.</p>
         <div class="foot">
-          <a class="small-btn" href="feed.html">View Feed</a>
+          <a class="small-btn" href="feed.php?home=homepage.php">View Feed</a>
         </div>
       </article>
 
     </section>
 
-    <!-- OUR IMPACT -->
     <section class="info-strip">
       <div>
         <h3 style="margin:0;color:var(--green-900);">🌍 Our Impact</h3>
         <p style="margin:6px 0 0;">Together, we reduce food waste and spread kindness.</p>
       </div>
-      <div style="text-align:right;">
-        <div style="font-size:26px;font-weight:800;color:var(--green-700);">12,540+</div>
-        <div style="font-size:13px;">Help Delivered So Far</div>
+
+      <div style="text-align:center; padding: 0 10px; border-left: 1px solid #e0e0e0;">
+        <div style="font-size:26px;font-weight:800;color:var(--green-700);"><?php echo $total_deliveries; ?></div>
+        <div style="font-size:13px; font-weight: 600;">Aid Deliveries</div>
+      </div>
+
+      <div style="text-align:center; padding: 0 10px; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0;">
+        <div style="font-size:26px;font-weight:800;color:var(--green-700);"><?php echo $total_users; ?></div>
+        <div style="font-size:13px; font-weight: 600;">Active Users</div>
+      </div>
+      
+      <div style="text-align:center; padding: 0 10px;">
+        <div style="font-size:26px;font-weight:800;color:var(--green-700);"><?php echo $total_donations; ?></div>
+        <div style="font-size:13px; font-weight: 600;">Items Donated</div>
       </div>
     </section>
 
@@ -307,12 +429,10 @@
 
 </div>
 
-<!-- FOOTER -->
 <footer class="footer-container">
 
   <div class="footer-content">
 
-    <!-- LEFT -->
     <div class="footer-left">
       <h4>
         <svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:var(--orange-accent);">
@@ -325,7 +445,6 @@
 
       <div class="social-icons">
   <a href="https://x.com/SmartAid2025"><i class="fa-brands fa-x-twitter"></i></a>
-
   <a href="https://www.facebook.com/profile.php?id=61584193043021"><i class="fa-brands fa-facebook-f"></i></a>
   <a href="https://www.instagram.com/smartaid_donation/"><i class="fa-brands fa-instagram"></i></a>
 </div>
@@ -334,22 +453,17 @@
       <a class="back-to-top-btn" href="#top">↑ Back to Top</a>
     </div>
 
-    <!-- CENTER LINKS -->
     <div class="footer-links">
       <h5>Site Map</h5>
       <ul>
-        <li><a href="homepage.html">Homepage</a></li>
-        <li><a href="leaderboard.php">Leaderboard</a></li>
-        <li><a href="help.html">How It Works</a></li>
-        
-        <li><a href="contact_us.html">Contact Us</a></li>
+        <li><a href="homepage.php">Homepage</a></li>
+        <li><a href="leaderboard.php?home=homepage.php">Leaderboard</a></li>
+<li><a href="help.php?home=homepage.php">Help</a></li>
+<li><a href="contact_us.php?home=homepage.php">Contact Us</a></li>
+<li><a href="admin_login.php" style="font-size:16px; opacity:0.8;">Admin Login</a></li>
       </ul>
     </div>
-
- 
-
   </div>
-
   <div class="footer-bottom-strip">
     Copyright © 2025, SmartAid.
   </div>

@@ -1,3 +1,24 @@
+<?php
+session_start();
+
+// Check for dynamic 'home' link passed in the URL (e.g., from reporter_homepage.php)
+$dynamic_back_link = isset($_GET['home']) ? htmlspecialchars($_GET['home']) : null;
+
+// Default homepage fallback (used if not logged in or dynamic link is missing)
+$default_dashboard = 'homepage.php';
+
+if (isset($_SESSION['user_role'])) {
+    if ($_SESSION['user_role'] === 'donor') {
+        $default_dashboard = 'donor_homepage.php';
+    } elseif ($_SESSION['user_role'] === 'reporter') {
+        $default_dashboard = 'reporter_homepage.php';
+    }
+}
+
+// Final link: use dynamic link if provided, otherwise use the session-based default
+$home_link = $dynamic_back_link ?? $default_dashboard;
+?>
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -282,7 +303,7 @@
         </div>
 
         <footer>
-          <small>Can't find an answer? Use the contact options on the right, or email <strong>support@smart-aid.example</strong> (replace with your real support address).</small>
+          <small>Can't find an answer? Use the contact options on the right, or email <strong>smrtaid@gmail.com</strong></small>
         </footer>
       </section>
 
@@ -334,9 +355,9 @@
 
         <div style="margin-top:8px">
           <div style="font-weight:700; margin-bottom:6px">Guides</div>
-          <a class="btn secondary" style="display:inline-flex; text-decoration:none" href="homepage.html" title="Back to homepage">
-            <span class="material-icons-outlined">home</span> Back to Home
-          </a>
+          <a class="btn secondary" href="<?php echo htmlspecialchars($home_link); ?>">
+  <span class="material-icons-outlined">home</span> Back to Home
+</a>
         </div>
       </aside>
     </main>

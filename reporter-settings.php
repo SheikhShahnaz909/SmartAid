@@ -6,6 +6,58 @@
   <title>Smart Aid — Reporter Settings</title>
 
   <style>
+    /* Donor-style dropdown */
+.d-toggle {
+  font-weight:700;
+  background:linear-gradient(120deg,#0ea5a3,#0f766e);
+  color:white;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+}
+
+.d-toggle .initial {
+  font-size:16px;
+  font-weight:800;
+}
+
+.d-dropdown{
+  position:absolute;
+  top:52px;
+  right:0;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  width:180px;
+  display:none;
+  overflow:hidden;
+  z-index:100;
+}
+
+.d-dropdown a{
+  display:block;
+  padding:10px 14px;
+  color:#0f766e;
+  font-weight:600;
+  text-decoration:none;
+  border-bottom:1px solid #eee;
+}
+
+.d-dropdown a:last-child{
+  border-bottom:none;
+}
+
+.d-dropdown a.signout{
+  color:#b91c1c;
+  font-weight:700;
+}
+
     :root{
       --bg-overlay: rgba(4,15,10,0.55);
       --card-bg: rgba(255,255,255,0.95);
@@ -111,7 +163,7 @@
     <div style="display:flex;align-items:center;gap:14px">
 
       <!-- Super-thick centered back arrow -->
-      <div onclick="window.location.href='reporter_homepage.html'"
+      <div onclick="window.location.href='reporter_homepage.php'"
            style="
               cursor:pointer;
               display:flex;
@@ -149,19 +201,21 @@
     </div>
 
   <!-- profile dropdown (compact) -->
-<div class="profile-wrap">
-    <button id="profileToggle" class="profile-btn">
-        <span class="profile-avatar">R</span>
-    </button>
+<!-- Donor-style dropdown for Reporter -->
+<div style="position:relative;">
+  <div id="dropdownToggle" class="d-toggle">
+    <div class="initial">R</div>
+  </div>
 
-    <div id="profileMenu" class="profile-menu" aria-hidden="true">
-        <button id="goReporterHome">Home</button>
-        <button id="goViewProfile">View Profile</button>
-        <button id="goSettings">My Reports</button>
-        <hr>
-        <button id="signOut" style="color:var(--danger)">Sign out</button>
-    </div>
+  <div id="dropdownMenu" class="d-dropdown">
+    <a href="reporter_homepage.html">Home</a>
+    <a href="reporter_profile.html">View Profile</a>
+    <a href="my_reports.php">My Reports</a>
+    
+    <a href="logout.php" class="signout">Log Out</a>
+  </div>
 </div>
+
 
 
 </header>
@@ -374,6 +428,35 @@ if (backBtnEl) {
       document.getElementById('lastLogin').textContent = localStorage.getItem('rs_lastLogin') || '—';
     });
   </script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.getElementById('dropdownToggle');
+  const menu = document.getElementById('dropdownMenu');
+
+  // safety check (no errors if elements missing)
+  if (!toggle || !menu) return;
+
+  toggle.addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', function (e) {
+    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') menu.style.display = 'none';
+  });
+});
+</script>
 
 </body>
 </html>

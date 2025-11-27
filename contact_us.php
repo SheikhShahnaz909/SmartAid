@@ -1,3 +1,38 @@
+<?php
+session_start();
+
+// 1. DETERMINE DEFAULT DASHBOARD LINK
+// Default to public homepage if user is not logged in
+$default_dashboard = 'homepage.php';
+
+if (isset($_SESSION['user_role'])) {
+    if ($_SESSION['user_role'] === 'donor') {
+        $default_dashboard = 'donor_homepage.php';
+    } elseif ($_SESSION['user_role'] === 'reporter') {
+        $default_dashboard = 'reporter_homepage.php';
+    }
+}
+// 2. CHECK FOR PASSED DYNAMIC LINK (Priority: URL parameter)
+$home_link = $default_dashboard;
+if (isset($_GET['home'])) {
+    $passed_link = htmlspecialchars($_GET['home']);
+    // Validate the passed link against known, safe dashboards
+    if ($passed_link === 'donor_homepage.php' || $passed_link === 'reporter_homepage.php' || $passed_link === 'homepage.html') {
+        $home_link = $passed_link;
+    }
+}
+$status_message = null;
+if (isset($_GET['status'])) {
+  if ($_GET['status'] === 'success') {
+    $status_message = "<div class='status-message success'>✅ Thank you! Your message has been sent to our support team.</div>";
+    } elseif ($_GET['status'] === 'fail') {
+            $status_message = "<div class='status-message error'>❌ Error: The message could not be sent due to a server issue. Please try again.</div>";
+ }
+ elseif ($_GET['status'] === 'fail_missing') {
+    $status_message = "<div class='status-message error'>⚠️ Please fill in all required fields (Name, Email, Message).</div>";
+ }
+}
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -229,7 +264,7 @@
 
       <div class="contact-block">
         <h3> Email Support</h3>
-        <p>support@smart-aid.example</p>
+        <p>smrtaid@gmail.com</p>
         <p>We reply within 24 hours.</p>
       </div>
 
@@ -238,24 +273,25 @@
       <div class="contact-block">
         <h3> Send us a Message</h3>
 
-        <form>
-          <div class="form-group">
-            <label>Your Name</label>
-            <input type="text" placeholder="Enter your name">
-          </div>
+        <form method="POST" action="send_contact.php">
+  <div class="form-group">
+    <label>Your Name</label>
+    <input type="text" name="name" placeholder="Enter your name" required>
+  </div>
 
-          <div class="form-group">
-            <label>Your Email</label>
-            <input type="email" placeholder="Enter your email">
-          </div>
+  <div class="form-group">
+    <label>Your Email</label>
+    <input type="email" name="email" placeholder="Enter your email" required>
+  </div>
 
-          <div class="form-group">
-            <label>Your Message</label>
-            <textarea rows="4" placeholder="Type your message"></textarea>
-          </div>
+  <div class="form-group">
+    <label>Your Message</label>
+    <textarea rows="4" name="message" placeholder="Type your message" required></textarea>
+  </div>
 
-          <button class="btn">Send Message</button>
-        </form>
+  <button class="btn" type="submit">Send Message</button>
+</form>
+
       </div>
 
     </section>
@@ -264,20 +300,11 @@
     <aside class="help-card">
       <h3>Quick Support</h3>
 
-     
-
-      <div class="quick-item">
-        <span class="material-icons-outlined">mail</span>
-        <div>
-          <div>Email Queries</div>
-          <div>We respond within 24 hours</div>
-        </div>
-      </div>
+      <a class="btn secondary" href="<?php echo htmlspecialchars($home_link); ?>">
+  <span class="material-icons-outlined">home</span> Back to Home
+</a>
 
 
-      <a class="btn secondary" href="homepage.html">
-        <span class="material-icons-outlined">home</span> Back to Home
-      </a>
     </aside>
 
   </main>

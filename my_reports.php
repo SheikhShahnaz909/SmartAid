@@ -1,134 +1,173 @@
 <?php
-// my_reports.php - Reporter's history of submitted needs
-
-require 'config.php';
+// my_reports.php
 session_start();
+require 'config.php'; // $pdo
 
+// Only reporters can see this page
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'reporter') {
-    header("Location: reporter_login.php?error=auth_required");
+    header("Location: reporter_homepage.php?error=auth_required");
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
-$reporter_name = htmlspecialchars($_SESSION['user_name'] ?? 'Reporter');
-$message = '';
-$reports = [];
+$reporter_id = (int)$_SESSION['user_id'];
 
+// Fetch reports for this reporter
 try {
-    // NOTE: This SQL assumes a 'reports' table with a 'reporter_id' column.
-    $stmt = $pdo->prepare("SELECT report_type, description, location, status, DATE_FORMAT(submission_date, '%Y-%m-%d') as date 
-                           FROM reports WHERE reporter_id = :id ORDER BY submission_date DESC");
-    $stmt->execute([':id' => $user_id]);
-    $reports = $stmt->fetchAll();
+    $sql = "SELECT report_id, report_type, description, location, status, created_at
+            FROM reports
+            WHERE reporter_id = :rid
+            ORDER BY created_at DESC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':rid' => $reporter_id]);
+    $myReports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $message = "Error fetching reports. Database table might be missing.";
+    die("Database error: " . htmlspecialchars($e->getMessage()));
 }
+
+$reporter_name = htmlspecialchars($_SESSION['user_name'] ?? 'Reporter');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Aid - My Reports</title>
+    <title>My Reports - Smart Aid</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        /* ... (CSS styles similar to donation_history.php) ... */
         :root {
-            --primary-green: #1A733E; 
-            --dark-text: #114b2b;
-            --muted: #f4f7f5;
+            --primary-green: #1A733E;
+            --light-green: #E0FFE0;
+            --bg: #f4f7f5;
         }
-
-        body {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             font-family: 'Poppins', sans-serif;
-            background: var(--muted);
-            color: var(--dark-text);
-            padding: 40px 20px;
         }
-
-        .data-container {
+        body {
+            background: var(--bg);
+            padding: 30px;
+            color: #114b2b;
+        }
+        .wrap {
             max-width: 900px;
             margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.06);
         }
-
-        h2 {
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
             color: var(--primary-green);
-            margin-bottom: 20px;
-            text-align: center;
         }
-
+        .sub {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
+            font-size: 14px;
         }
-
         th, td {
-            padding: 12px 15px;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e4ede6;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            vertical-align: top;
         }
-
         th {
-            background-color: var(--primary-green);
-            color: white;
+            background: #e9f5ee;
+            color: #205738;
             font-weight: 600;
         }
-
-        tr:nth-child(even) {
-            background-color: #f2f8f5;
+        tr:last-child td {
+            border-bottom: none;
         }
-
-        .status-new { color: red; font-weight: 600; }
-        .status-inprogress { color: orange; font-weight: 600; }
-        .status-resolved { color: green; font-weight: 600; }
-        
-        .back-link {
+        .badge {
             display: inline-block;
-            margin-top: 20px;
-            color: var(--primary-green);
-            text-decoration: none;
-            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+        .badge.pending { background:#fff3cd; color:#8a6d3b; }
+        .badge.verified { background:#e8f5e9; color:#2e7d32; }
+        .badge.in_progress { background:#e3f2fd; color:#1565c0; }
+        .badge.completed { background:#e8f5e9; color:#1b5e20; }
+        .badge.rejected { background:#ffebee; color:#c62828; }
+        .back-link {
+            display:inline-block;
+            margin-top: 18px;
+            text-decoration:none;
+            color:var(--primary-green);
+            font-weight:600;
+        }
+        .status-empty {
+            text-align:center;
+            padding:20px;
+            color:#666;
+        }
+        .success-msg {
+            background:#e1f8e5;
+            border:1px solid #8fd19b;
+            padding:8px 10px;
+            border-radius:8px;
+            font-size:13px;
+            margin-bottom:10px;
+            color:#1b5e20;
         }
     </style>
 </head>
 <body>
-    <div class="data-container">
-        <h2>Reports Filed by <?php echo $reporter_name; ?></h2>
-        
-        <?php if ($message): ?>
-            <p style="color: red; text-align: center;"><?php echo $message; ?></p>
-        <?php elseif (empty($reports)): ?>
-            <p style="text-align: center; color: #555;">You have not filed any reports yet.</p>
-        <?php else: ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($reports as $report): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($report['date']); ?></td>
-                        <td><?php echo htmlspecialchars($report['report_type']); ?></td>
-                        <td><?php echo htmlspecialchars($report['location']); ?></td>
-                        <td class="status-<?php echo strtolower(str_replace(' ', '', $report['status'])); ?>">
-                            <?php echo htmlspecialchars($report['status']); ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+<div class="wrap">
+    <h1>My Reports</h1>
+    <p class="sub">Hi, <?= $reporter_name ?>. Here are all the needs you have reported so far.</p>
 
-        <a href="reporter_homepage.php" class="back-link">← Back to Dashboard</a>
-    </div>
+    <?php if (isset($_GET['success'])): ?>
+        <div class="success-msg">Your need report was submitted successfully.</div>
+    <?php endif; ?>
+
+    <?php if (empty($myReports)): ?>
+        <div class="status-empty">You have not reported any needs yet.</div>
+    <?php else: ?>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type &amp; Description</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($myReports as $r): ?>
+                <tr>
+                    <td>#<?= (int)$r['report_id'] ?></td>
+                    <td>
+                        <strong><?= htmlspecialchars($r['report_type']) ?></strong><br>
+                        <span style="font-size:13px; color:#444;">
+                            <?= nl2br(htmlspecialchars($r['description'])) ?>
+                        </span>
+                    </td>
+                    <td><?= htmlspecialchars($r['location']) ?></td>
+                    <td>
+                        <span class="badge <?= htmlspecialchars($r['status']) ?>">
+                            <?= htmlspecialchars($r['status']) ?>
+                        </span>
+                    </td>
+                    <td><?= htmlspecialchars($r['created_at']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+
+    <a class="back-link" href="reporter_homepage.php">← Back to Dashboard</a>
+</div>
 </body>
 </html>

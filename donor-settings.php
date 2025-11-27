@@ -1,3 +1,126 @@
+<?php
+// donor-settings.php
+session_start();
+require 'config.php';
+
+// Only donors can access
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'donor') {
+    header("Location: donor_login.php");
+    exit;
+}
+
+$userId = (int)$_SESSION['user_id'];
+
+function h($v) {
+    return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+// Messages
+$errors = [];
+$successMsg = "";
+
+// Handle POST (account update or password change)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'update_account') {
+        $name  = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $city  = trim($_POST['city'] ?? '');
+
+        if ($name === '') {
+            $errors[] = "Name cannot be empty.";
+        }
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Please enter a valid email address.";
+        }
+
+        // Enforce email uniqueness (excluding current user)
+        if ($email !== '') {
+            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE email = :email AND user_id <> :uid LIMIT 1");
+            $stmt->execute([':email' => $email, ':uid' => $userId]);
+            if ($stmt->fetch()) {
+                $errors[] = "That email is already used by another account.";
+            }
+        }
+
+        if (empty($errors)) {
+            $stmt = $pdo->prepare("
+                UPDATE users
+                SET name = :name, email = :email, phone = :phone, location = :loc
+                WHERE user_id = :uid
+                LIMIT 1
+            ");
+            $stmt->execute([
+                ':name' => $name,
+                ':email' => $email,
+                ':phone' => $phone,
+                ':loc' => $city,
+                ':uid' => $userId
+            ]);
+
+            // Update session name so headers, etc. stay in sync
+            $_SESSION['user_name'] = $name;
+
+            $successMsg = "Account details updated successfully.";
+        }
+
+    } elseif ($action === 'change_password') {
+        $current = $_POST['current_password'] ?? '';
+        $new     = $_POST['new_password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
+
+        if ($new === '' || $confirm === '') {
+            $errors[] = "New password and confirm password are required.";
+        } elseif ($new !== $confirm) {
+            $errors[] = "New password and confirm password do not match.";
+        } elseif (!preg_match('/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $new)) {
+            $errors[] = "New password must be at least 8 characters and include a capital letter, a number and a symbol.";
+        } else {
+            // Fetch current hash
+            $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE user_id = :uid LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row || !password_verify($current, $row['password_hash'])) {
+                $errors[] = "Current password is incorrect.";
+            } else {
+                $newHash = password_hash($new, PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("UPDATE users SET password_hash = :ph WHERE user_id = :uid LIMIT 1");
+                $stmt->execute([':ph' => $newHash, ':uid' => $userId]);
+                $successMsg = "Password updated successfully.";
+            }
+        }
+    }
+}
+
+// Fetch fresh user data for display
+$stmt = $pdo->prepare("SELECT name, email, phone, location, created_at FROM users WHERE user_id = :uid LIMIT 1");
+$stmt->execute([':uid' => $userId]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    session_destroy();
+    header("Location: donor_login.php");
+    exit;
+}
+
+$name     = $user['name'] ?? '';
+$email    = $user['email'] ?? '';
+$phone    = $user['phone'] ?? '';
+$city     = $user['location'] ?? '';
+$created  = $user['created_at'] ?? null;
+
+// For avatars/initials
+$initialSource = $name !== '' ? $name : $email;
+$initial = $initialSource !== '' ? mb_strtoupper(mb_substr($initialSource, 0, 1, 'UTF-8')) : 'D';
+
+$lastLoginText = isset($_SESSION['last_login'])
+    ? $_SESSION['last_login']
+    : ($created ? date('Y-m-d H:i', strtotime($created)) : '—');
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -91,7 +214,7 @@
     .row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
     .field{flex:1 1 200px;display:flex;flex-direction:column;gap:6px}
     label{font-size:13px;color:#47585a}
-    input[type="text"], input[type="email"], input[type="tel"], select{
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select{
       padding:10px;border-radius:10px;border:1px solid #e6eef6;background:transparent;font-size:14px;outline:none;
     }
 
@@ -115,10 +238,21 @@
     .modal{width:100%;max-width:520px;background:var(--card-bg);border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.6)}
     .modal .actions{display:flex;justify-content:flex-end;gap:8px}
 
-    /* Dropdown menu style */
     .d-dropdown{position:absolute;top:48px;right:0;background:white;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.18);width:180px;display:none;overflow:hidden;z-index:80}
     .d-dropdown a{display:block;padding:10px 14px;color:#0f766e;font-weight:600;text-decoration:none;border-bottom:1px solid #eee}
     .d-dropdown a:last-child{border-bottom:none;color:#b91c1c}
+
+    /* Flash messages */
+    .flash-wrap{max-width:1100px;margin:10px auto 0;padding:0 18px;}
+    .flash{
+      margin-bottom:8px;
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.18);
+    }
+    .flash-success{background:rgba(16,185,129,0.12);color:#064e3b;border:1px solid rgba(16,185,129,0.4);}
+    .flash-error{background:rgba(248,113,113,0.12);color:#7f1d1d;border:1px solid rgba(248,113,113,0.4);}
 
     @media (max-width:880px){
       main{grid-template-columns:1fr;padding:12px}
@@ -131,8 +265,8 @@
   <header>
     <div style="display:flex;align-items:center;gap:14px">
 
-      <!-- Super-thick centered back arrow -->
-      <div onclick="window.location.href='donor_homepage.html'"
+      <!-- Back arrow -->
+      <div onclick="window.location.href='donor_homepage.php'"
            style="
               cursor:pointer;
               display:flex;
@@ -160,7 +294,7 @@
       <!-- Brand + Logo -->
       <div class="brand" style="display:flex;align-items:center;gap:12px">
         <div class="logo" aria-hidden="true">
-          <img src="circle-logo.png" alt="Smart Aid logo">
+          <img src="images/circle-logo.png" alt="Smart Aid logo">
         </div>
         <div>
           <h1>Smart Aid</h1>
@@ -169,30 +303,41 @@
       </div>
     </div>
 
-    <!-- RIGHT: D Icon + dropdown -->
+    <!-- RIGHT: initial + dropdown -->
     <div style="position:relative">
       <div id="dropdownToggle"
            style="font-weight:700;background:linear-gradient(120deg,#0ea5a3,#0f766e);color:white;padding:8px 12px;border-radius:8px;cursor:pointer;user-select:none;">
-        D
+        <?php echo h($initial); ?>
       </div>
 
       <div id="dropdownMenu" class="d-dropdown" aria-hidden="true">
-        <a href="view-profile.html">View Profile</a>
-        <a href="donor-settings.html">Settings</a>
-        <a href="donor_homepage.html">Home</a>
-        <a href="index.html">Sign Out</a>
+        <a href="donor_homepage.php">Home</a>
+        <a href="donor_profile.php">View Profile</a>
+        <a href="my_donation.php">My Donations</a>
+        <a href="logout.php">Log Out</a>
       </div>
     </div>
   </header>
+
+  <!-- Flash messages -->
+  <div class="flash-wrap">
+    <?php if (!empty($errors)): ?>
+      <?php foreach ($errors as $e): ?>
+        <div class="flash flash-error"><?php echo h($e); ?></div>
+      <?php endforeach; ?>
+    <?php elseif ($successMsg): ?>
+      <div class="flash flash-success"><?php echo h($successMsg); ?></div>
+    <?php endif; ?>
+  </div>
 
   <main>
     <!-- LEFT PANEL -->
     <aside class="panel">
       <div class="profile-quick">
-        <div class="quick-avatar" id="quickAvatar">U</div>
+        <div class="quick-avatar" id="quickAvatar"><?php echo h($initial); ?></div>
         <div>
-          <div id="displayNameLeft" style="font-weight:800;cursor:pointer">Uzma</div>
-          <div class="small-muted" id="displayEmailLeft">uzma@example.com</div>
+          <div id="displayNameLeft" style="font-weight:800;cursor:pointer"><?php echo h($name); ?></div>
+          <div class="small-muted" id="displayEmailLeft"><?php echo h($email); ?></div>
         </div>
       </div>
 
@@ -219,15 +364,18 @@
         <div class="row">
           <div class="field">
             <label>Full name</label>
-            <input id="nameInput" type="text" placeholder="Your full name">
+            <input id="nameInput" type="text" placeholder="Your full name"
+                   value="<?php echo h($name); ?>">
           </div>
           <div class="field">
             <label>Email</label>
-            <input id="emailInput" type="email" placeholder="you@example.com">
+            <input id="emailInput" type="email" placeholder="you@example.com"
+                   value="<?php echo h($email); ?>">
           </div>
           <div class="field">
             <label>Phone</label>
-            <input id="phoneInput" type="tel" placeholder="+91 98765 43210">
+            <input id="phoneInput" type="tel" placeholder="+91 98765 43210"
+                   value="<?php echo h($phone); ?>">
           </div>
         </div>
 
@@ -238,7 +386,7 @@
           </div>
           <div class="field">
             <label>Login activity</label>
-            <div class="small-muted">Last login: <span id="lastLogin">—</span></div>
+            <div class="small-muted">Last login: <span id="lastLogin"><?php echo h($lastLoginText); ?></span></div>
           </div>
         </div>
 
@@ -263,7 +411,8 @@
         <div class="row">
           <div class="field">
             <label>Preferred city / area</label>
-            <input id="cityInput" type="text" placeholder="e.g., Mumbai, Delhi">
+            <input id="cityInput" type="text" placeholder="e.g., Mumbai, Delhi"
+                   value="<?php echo h($city); ?>">
           </div>
           <div class="field">
             <label>Auto match requests</label>
@@ -300,14 +449,6 @@
             </div>
             <div id="leaderboardSwitch" class="switch"><div class="dot"></div></div>
           </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-weight:700">Two-factor authentication</div>
-              <div class="small-muted">Add extra protection to your account.</div>
-            </div>
-            <div id="twofaSwitch" class="switch"><div class="dot"></div></div>
-          </div>
         </div>
 
         <div style="margin-top:18px" class="danger">
@@ -327,21 +468,29 @@
 
         <div style="display:flex;flex-direction:column;gap:10px">
           <div>
-            <strong>FAQ</strong>
-            <div class="small-muted">Answers to common questions and how-tos.</div>
-          </div>
-          <div>
             <strong>Contact support</strong>
-            <div class="small-muted">support@smart-aid.org</div>
-          </div>
-          <div>
-            <strong>Report an issue</strong>
-            <div class="small-muted">Use this to report suspicious requests or problems.</div>
+            <div class="small-muted">smrtaid@gmail.com</div>
           </div>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- Hidden forms for backend POST -->
+  <form id="accountForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="update_account">
+    <input type="hidden" name="name">
+    <input type="hidden" name="email">
+    <input type="hidden" name="phone">
+    <input type="hidden" name="city">
+  </form>
+
+  <form id="passwordForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="change_password">
+    <input type="hidden" name="current_password">
+    <input type="hidden" name="new_password">
+    <input type="hidden" name="confirm_password">
+  </form>
 
   <!-- Change Password Modal -->
   <div id="modalChangePassword" class="modal-backdrop" role="dialog" aria-modal="true">
@@ -379,7 +528,6 @@
   </div>
 
   <script>
-    // Helper
     const el = id => document.getElementById(id);
 
     // NAV: panels and buttons
@@ -394,9 +542,12 @@
       Object.values(panels).forEach(p => p.style.display = 'none');
       if(panels[name]) panels[name].style.display = '';
       navButtons.forEach(b => b.classList.toggle('active', b.dataset.section === name));
-      localStorage.setItem('sa_settings_active', name);
     }
     navButtons.forEach(b => b.addEventListener('click', ()=> showSection(b.dataset.section)));
+
+    (function initSection(){
+      showSection('account');
+    })();
 
     // Dropdown toggle
     const toggle = el('dropdownToggle');
@@ -409,101 +560,87 @@
       if(!toggle.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
     });
 
-    // Initial selection: honor ?open=settings, #settings, localStorage flag, else default to account
-    (function initSection(){
-      const params = new URLSearchParams(window.location.search);
-      if(params.get('open') === 'settings' || window.location.hash === '#settings' || localStorage.getItem('sa_open_settings') === '1'){
-        const saved = localStorage.getItem('sa_settings_active') || 'account';
-        showSection(saved);
-        localStorage.removeItem('sa_open_settings');
-        return;
-      }
-      showSection(localStorage.getItem('sa_settings_active') || 'account');
-    })();
+    // Save account -> POST to backend
+    el('saveAccount').addEventListener('click', ()=> {
+      const form = document.getElementById('accountForm');
+      form.elements['name'].value  = el('nameInput').value.trim();
+      form.elements['email'].value = el('emailInput').value.trim();
+      form.elements['phone'].value = el('phoneInput').value.trim();
+      form.elements['city'].value  = el('cityInput').value.trim();
+      form.submit();
+    });
 
-    // Restore fields
-    el('nameInput').value = localStorage.getItem('sa_name') || 'Uzma';
-    el('emailInput').value = localStorage.getItem('sa_email') || 'uzma@example.com';
-    el('phoneInput').value = localStorage.getItem('sa_phone') || '';
-    el('cityInput').value = localStorage.getItem('sa_city') || '';
-    el('displayNameLeft').innerText = localStorage.getItem('sa_name') || 'Uzma';
-    el('displayEmailLeft').innerText = localStorage.getItem('sa_email') || 'uzma@example.com';
-    el('lastLogin').innerText = localStorage.getItem('sa_last_login') || new Date().toLocaleString();
+    // Reset account fields to current page values (just reload)
+    el('resetAccount').addEventListener('click', ()=> {
+      window.location.reload();
+    });
 
-    // Categories restore
+    // Donation preferences still saved locally for now (you can later move to DB)
     const cats = document.querySelectorAll('.cat');
     const savedCats = JSON.parse(localStorage.getItem('sa_categories') || '[]');
     cats.forEach(c => { if(savedCats.includes(c.value)) c.checked = true; });
 
-    // Switches
-    const switches = { autoMatch: el('autoMatchSwitch'), history: el('historySwitch'), leaderboard: el('leaderboardSwitch'), twofa: el('twofaSwitch') };
+    const autoMatchSwitch = el('autoMatchSwitch');
     function toggleSwitch(elm,on){ elm.classList.toggle('on', !!on); }
-    toggleSwitch(switches.autoMatch, localStorage.getItem('sa_autoMatch') === 'true');
-    toggleSwitch(switches.history, localStorage.getItem('sa_showHistory') !== 'false');
-    toggleSwitch(switches.leaderboard, localStorage.getItem('sa_showLeaderboard') === 'true');
-    toggleSwitch(switches.twofa, localStorage.getItem('sa_2fa') === 'true');
-    Object.entries(switches).forEach(([k,elm])=>{
-      elm.addEventListener('click', ()=>{
-        const on = !elm.classList.contains('on');
-        toggleSwitch(elm,on);
-        const key = { autoMatch:'sa_autoMatch', history:'sa_showHistory', leaderboard:'sa_showLeaderboard', twofa:'sa_2fa' }[k];
-        localStorage.setItem(key, on);
-        touchSaved();
-      });
+    toggleSwitch(autoMatchSwitch, localStorage.getItem('sa_autoMatch') === 'true');
+    autoMatchSwitch.addEventListener('click', ()=> {
+      const on = !autoMatchSwitch.classList.contains('on');
+      toggleSwitch(autoMatchSwitch, on);
+      localStorage.setItem('sa_autoMatch', on);
     });
 
-    // Save account
-    el('saveAccount').addEventListener('click', ()=>{
-      localStorage.setItem('sa_name', el('nameInput').value.trim() || 'Uzma');
-      localStorage.setItem('sa_email', el('emailInput').value.trim() || 'uzma@example.com');
-      localStorage.setItem('sa_phone', el('phoneInput').value.trim() || '');
-      el('displayNameLeft').innerText = localStorage.getItem('sa_name');
-      el('displayEmailLeft').innerText = localStorage.getItem('sa_email');
-      touchSaved();
-      alert('Account settings saved locally (mock).');
-    });
-    el('resetAccount').addEventListener('click', ()=>{
-      el('nameInput').value = localStorage.getItem('sa_name') || 'Uzma';
-      el('emailInput').value = localStorage.getItem('sa_email') || 'uzma@example.com';
-      el('phoneInput').value = localStorage.getItem('sa_phone') || '';
-    });
-
-    // Save donation preferences
-    el('saveDonation').addEventListener('click', ()=>{
+    el('saveDonation').addEventListener('click', ()=> {
       const chosen = Array.from(document.querySelectorAll('.cat:checked')).map(i=>i.value);
       localStorage.setItem('sa_categories', JSON.stringify(chosen));
-      localStorage.setItem('sa_city', el('cityInput').value.trim());
-      touchSaved();
-      alert('Donation preferences saved locally (mock).');
+      localStorage.setItem('sa_city_pref', el('cityInput').value.trim());
+      el('lastSaved').innerText = new Date().toLocaleString();
+      alert('Donation preferences saved (local only for now).');
     });
 
-    // Change password mock
+    // Privacy switches (still local)
+    const historySwitch = el('historySwitch');
+    const leaderboardSwitch = el('leaderboardSwitch');
+    toggleSwitch(historySwitch, localStorage.getItem('sa_showHistory') !== 'false');
+    toggleSwitch(leaderboardSwitch, localStorage.getItem('sa_showLeaderboard') === 'true');
+    historySwitch.addEventListener('click', ()=> {
+      const on = !historySwitch.classList.contains('on');
+      toggleSwitch(historySwitch,on);
+      localStorage.setItem('sa_showHistory', on);
+    });
+    leaderboardSwitch.addEventListener('click', ()=> {
+      const on = !leaderboardSwitch.classList.contains('on');
+      toggleSwitch(leaderboardSwitch,on);
+      localStorage.setItem('sa_showLeaderboard', on);
+    });
+
+    // Change password -> open modal
     el('changePasswordBtn').addEventListener('click', ()=> el('modalChangePassword').style.display = 'flex');
     el('closeChangePassword').addEventListener('click', ()=> el('modalChangePassword').style.display = 'none');
-    el('saveChangePassword').addEventListener('click', ()=>{
-      const n = el('newPassword').value; const c = el('confirmPassword').value;
-      if(!n || n.length < 6){ alert('Password must be at least 6 characters.'); return; }
-      if(n !== c){ alert('Passwords do not match.'); return; }
-      localStorage.setItem('sa_password_last_changed', new Date().toISOString());
-      el('modalChangePassword').style.display = 'none';
-      touchSaved();
-      alert('Password changed locally (mock). In production call backend.');
+
+    // Save password -> POST to backend
+    el('saveChangePassword').addEventListener('click', ()=> {
+      const pf = document.getElementById('passwordForm');
+      pf.elements['current_password'].value = el('currentPassword').value;
+      pf.elements['new_password'].value     = el('newPassword').value;
+      pf.elements['confirm_password'].value = el('confirmPassword').value;
+      pf.submit();
     });
 
-    // Deactivate / delete
-    el('deactivateBtn').addEventListener('click', ()=>{
-      openConfirm('Deactivate account', 'Deactivate your account? You can reactivate later by logging in.', ()=>{
-        localStorage.setItem('sa_deactivated','true'); touchSaved(); alert('Account deactivated (mock).');
-      });
+    // Deactivate / delete (still mock/local)
+    el('deactivateBtn').addEventListener('click', ()=> {
+      openConfirm('Deactivate account',
+                  'This will only deactivate locally in this demo. In production you would call the backend.',
+                  ()=> { alert('Deactivated (local mock only).'); });
     });
-    el('deleteBtn').addEventListener('click', ()=>{
-      openConfirm('Delete account', 'Delete your account and all local data permanently. This cannot be undone.', ()=>{
-        const theme = localStorage.getItem('sa_theme'); localStorage.clear(); if(theme) localStorage.setItem('sa_theme', theme);
-        alert('Account deleted locally (mock). In production call backend to remove user data.'); location.reload();
-      }, true);
+    el('deleteBtn').addEventListener('click', ()=> {
+      openConfirm('Delete account',
+                  'This will clear local demo data. In production this would delete your account from the server.',
+                  ()=> {
+                    localStorage.clear();
+                    alert('Local demo data cleared. (Server account is NOT deleted in this demo.)');
+                  });
     });
 
-    // Confirm dialog helper
     function openConfirm(title,message,onOk){
       el('confirmTitle').innerText = title;
       el('confirmMessage').innerText = message;
@@ -512,35 +649,18 @@
       el('modalConfirm').style.display = 'flex';
     }
 
-    function touchSaved(){
-      const now = new Date().toLocaleString();
-      el('lastSaved').innerText = now;
-      localStorage.setItem('sa_last_saved', new Date().toISOString());
-    }
-
     // Close modals by backdrop or Escape
     document.querySelectorAll('.modal-backdrop').forEach(back => {
       back.addEventListener('click', e => { if(e.target === back) back.style.display = 'none'; });
     });
-    window.addEventListener('keydown', e => { if(e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m=>m.style.display='none'); });
+    window.addEventListener('keydown', e => {
+      if(e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m=>m.style.display='none');
+    });
 
-    // Quick link to view-profile (local convenience)
-    document.querySelector('#displayNameLeft').addEventListener('click', ()=> { window.location.href = 'view-profile.html'; });
-
-    // Initialize quick avatar
-    (function initQuickAvatar(){
-      const raw = localStorage.getItem('sa_profile');
-      const name = raw ? JSON.parse(raw).name : localStorage.getItem('sa_name') || 'Uzma';
-      const initial = (name && name.charAt(0).toUpperCase()) || 'U';
-      const qa = document.getElementById('quickAvatar');
-      qa.textContent = initial;
-    })();
-
-    // Ensure dropdown menu doesn't throw if elements missing
-    if(!toggle || !menu){
-      // no-op, but safe
-    }
-
+    // Clicking name on left -> go to real profile page
+    document.querySelector('#displayNameLeft').addEventListener('click', ()=> {
+      window.location.href = 'donor_profile.php';
+    });
   </script>
 </body>
 </html>

@@ -1,382 +1,265 @@
 <?php
 session_start();
-// Ensure user is logged in
-if (!isset($_SESSION['user_id'])) { header("Location: donor_login.php"); exit(); }
+$home_link = 'homepage.php';
 
-// Initialize session variables for notifications if they don't exist
-if (!isset($_SESSION['notifications_unread'])) {
-    $_SESSION['notifications_unread'] = 3;
+// If ?home= is passed in the URL, that ALWAYS wins
+if (isset($_GET['home'])) {
+    $allowed = ['homepage.php', 'donor_homepage.php', 'reporter_homepage.php'];
+    if (in_array($_GET['home'], $allowed, true)) {
+        $home_link = $_GET['home'];
+    }
 }
-if (!isset($_SESSION['notifications_list'])) {
-    $_SESSION['notifications_list'] = [
-        ['id'=>1,'text'=>'Your donation to Flood Relief was received','time'=>'2h'],
-        ['id'=>2,'text'=>'New pickup scheduled for your donation','time'=>'1d'],
-        ['id'=>3,'text'=>'Leaderboard updated — you moved up 2 spots!','time'=>'3d'],
-    ];
+// If no ?home=, fall back to logged-in role
+elseif (isset($_SESSION['user_role'])) {
+    if ($_SESSION['user_role'] === 'donor') {
+        $home_link = 'donor_homepage.php';
+    } elseif ($_SESSION['user_role'] === 'reporter') {
+        $home_link = 'reporter_homepage.php';
+    }
+}
+// 1. ACCESS CONTROL GATE: Check for login status AND correct role.
+if (!isset($_SESSION['user_id'])) {
+    header("Location: donor_homepage.php"); 
+    exit();
+}
+if ($_SESSION['user_role'] !== 'donor') {
+    // Logged in, but as the wrong role: Force logout.
+    header("Location: logout.php"); 
+    exit();
 }
 
-// Get user name and initial for the avatar
-$userName = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : 'Donor';
-$initial = strtoupper($userName[0]);
+// 2. DATA SETUP: Fetch user data and set dashboard link
+$rawUserName = $_SESSION['user_name'] ?? $_SESSION['user_email'];
+$userName = htmlspecialchars($rawUserName);
+$initial = strtoupper($userName[0] ?? 'D');
+$dashboard_link = 'donor_homepage.php'; // Define dashboard link for internal use
 
-// Sample data for the Community Donor Feed (You would load this from a database in a real application)
-$feedPosts = [
-    [
-        'user' => 'Jane D.',
-        'time' => '1h ago',
-        'text' => 'Just donated 10 boxes of fresh produce to our local shelter! Excited to see it go to good use. 🌱',
-        'likes' => 15,
-        'image' => 'donation-post-1.jpg' // Placeholder image
-    ],
-    [
-        'user' => 'Alex P.',
-        'time' => '5h ago',
-        'text' => 'Shoutout to the Smart Aid team for the fast pickup of my winter clothes donation! Keep up the great work.',
-        'likes' => 8,
-        'image' => ''
-    ],
-];
+
+// ------------------- notification count snippet -------------------
+$unread_count = 0;
+if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'donor') {
+    $current_user_id = (int)$_SESSION['user_id'];
+
+    // Try to use existing $conn from config.php, otherwise build one
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        if (file_exists(__DIR__ . '/config.php')) include_once __DIR__ . '/config.php';
+    }
+
+    if (isset($conn) && ($conn instanceof mysqli)) {
+        $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = ? AND is_read = 0");
+        if ($stmt) {
+            $stmt->bind_param("i", $current_user_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $unread_count = (int)$row['cnt'];
+            }
+            $stmt->close();
+        }
+    }
+}
+
+// Provide a small JSON endpoint for AJAX polling
+if (isset($_GET['notif_count']) && $_GET['notif_count'] == '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => true, 'unread' => $unread_count]);
+    exit;
+}
+// ----------------- end notification count snippet -----------------
+
+
 ?>
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Smart Aid — Donor Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <style>
-        :root{
-            --green-900:#114b2b;
-            --green-700:#185e34;
-            --green-500:#37a264;
-            --green-300:#9be0b5;
-            --accent:#1e7a43;
-            --muted:#f4f7f5;
-            --card-shadow:0 6px 20px rgba(8,40,20,0.08);
-            --radius:12px;
-            --max-width:1100px;
-            --footer-bg:#114b2b;
-            --footer-text:#eaf8ef;
-            --orange-accent:#f99d3d;
-            --badge-bg:#ff4d4f;
-            --blue-accent: #5f90d1; /* Added for status icon */
-        }
-        *{box-sizing:border-box}
-        body{
-            margin:0;
-            font-family:Inter,system-ui,"Segoe UI",Roboto,Arial;
-            background:linear-gradient(180deg, #d3f3e1 0%, #f7fff9 100%); 
-            color:#08321b;
-            line-height:1.45;
-        }
-        .wrap{max-width:var(--max-width);margin:36px auto;padding:24px;}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Aid — Donor Dashboard</title>
 
-        /* --- HEADER STYLES --- (Retained) */
-        header.main-header{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:16px;
-            position:relative;
-        }
-        .brand{
-            display:flex;
-            align-items:center;
-            gap:12px;
-            text-decoration:none;
-            color:var(--green-900);
-        }
-        .logo{
-            width:52px;height:52px;
-            border-radius:10px;
-            overflow:hidden;
-            box-shadow:var(--card-shadow);
-        }
-        .logo img{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-            border-radius:10px;
-        }
-        .right-nav{
-            display:flex;
-            align-items:center;
-            gap:12px;
-        }
-        .right-nav a{
-            text-decoration:none;
-            color:var(--green-900);
-            padding:8px 12px;
-            border-radius:8px;
-            font-weight:600;
-            font-size:14px;
-        }
-
-        /* Notification & Avatar Button Styles (Retained) */
-        .notif-btn{
-            position:relative;
-            width:42px;height:42px;border-radius:10px;
-            display:flex;align-items:center;justify-content:center;
-            background:transparent;border:none;cursor:pointer;font-size:18px;color:var(--green-900);
-        }
-        .notif-btn:hover{ background: rgba(24,94,48,0.05); }
-
-        .notif-badge{
-            position:absolute;
-            top:6px; right:6px;
-            min-width:18px;height:18px;padding:0 5px;
-            background:var(--badge-bg); color:white;
-            font-size:12px;font-weight:800;border-radius:999px;
-            display:flex;align-items:center;justify-content:center;
-            box-shadow:0 2px 6px rgba(0,0,0,0.12);
-        }
-
-        #notifPanel{
-            position:absolute;
-            top:65px;
-            right:86px;
-            width:300px;
-            max-width:calc(100% - 40px);
-            background:white;border-radius:10px;
-            box-shadow:0 12px 30px rgba(8,40,20,0.12);
-            display:none;
-            z-index:60;
-            padding:10px;
-        }
-        #notifPanel h4{ margin:0 0 8px 0; font-size:15px; color:var(--green-900); }
-        .notif-item{ padding:10px;border-radius:8px; display:flex;justify-content:space-between; gap:8px; align-items:center; }
-        .notif-item + .notif-item{ margin-top:8px; }
-        .notif-item .text{ font-size:14px; color:#214f36; }
-        .notif-item .time{ font-size:12px; color:#6b8b74; opacity:0.85; }
-
-        .user-initial{
-            width:42px;height:42px;border-radius:50%;
-            background-color:var(--green-700);
-            color:white;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            font-weight:700;font-size:18px;
-            cursor:pointer;
-            box-shadow:0 4px 12px rgba(0,0,0,0.1);
-            transition:0.2s ease;
-        }
-        .user-initial:hover{
-            transform:scale(1.05);
-            background-color:var(--green-500);
-        }
-
-        #profileMenu {
-            position: absolute;
-            top: 65px;
-            right: 0;
-            width: 180px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-            display: none;
-            z-index: 50;
-            padding: 8px 0;
-        }
-        #profileMenu ul { list-style:none; margin:0; padding:0; }
-        #profileMenu li { padding:10px 15px; }
-        #profileMenu li:hover { background:#f2f6f3; }
-        #profileMenu a{
-            text-decoration:none;
-            font-size:14px;
-            font-weight:600;
-            color:var(--green-900);
-            display:block;
-        }
-        #profileMenu .divider{
-            height:1px;
-            background:#ccc;
-            margin:6px 0;
-        }
-
-        /* --- HERO SECTION --- (Retained) */
-        .hero{
-            margin-top:18px;
-            background:linear-gradient(100deg,var(--green-500) 0%,var(--green-300) 100%);
-            border-radius:var(--radius);
-            padding:36px; 
-            display:flex;
-            gap:24px;
-            align-items:center;
-            box-shadow:var(--card-shadow);
-        }
-        .eyebrow{
-            display:inline-block;
-            background:rgba(255,255,255,0.2); 
-            color:var(--green-900);
-            padding:6px 12px;
-            border-radius:999px;
-            font-weight:700;
-            font-size:13px;
-            margin-bottom:14px;
-        }
-        h1{margin:0 0 14px 0;font-size:32px;color:white;text-shadow:0 1px 3px rgba(0,0,0,0.1);} 
-        p.lead{margin:0 0 18px 0;color:white;opacity:0.95;font-size:17px;} 
-
-        /* --- ACTION CARDS --- (Retained & Extended) */
-        .donor-actions{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); /* Adjusted minmax for 4 cards */
-            gap:20px; 
-            margin-top:30px; 
-        }
-
-        .card{
-            background:white;
-            border-radius:var(--radius);
-            padding:24px; 
-            box-shadow:0 10px 30px rgba(8,40,20,0.1); 
-            min-height:160px; 
-            display:flex;
-            flex-direction:column;
-            gap:15px;
-            transition:transform 0.2s, box-shadow 0.2s;
-            text-decoration:none; 
-            color:inherit;
-        }
-        .card:hover{
-            transform: translateY(-5px);
-            box-shadow:0 15px 40px rgba(8,40,20,0.15);
-        }
-
-        .icon{
-            width:50px;height:50px; 
-            border-radius:12px;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            font-weight:700;
-            color:white;
-            font-size:24px; 
-        }
-        /* Specific Icon Colors */
-        .icon.impact{background:linear-gradient(135deg,#37a264,#185e34);} /* Green Gradient */
-        .icon.history{background:linear-gradient(135deg,#f99d3d,#d46c1a);} /* Orange/Amber Gradient */
-        .icon.status{background:linear-gradient(135deg,var(--blue-accent),#3f6aa7);} /* Blue Gradient */
-        .icon.feed{background:linear-gradient(135deg,#e37b92,#c94f6c);} /* Pink/Red Gradient for Social */
-
-        .card h3{margin:0;font-size:18px;color:var(--green-900);} 
-        .card p{margin:0;color:#2f5c45;font-size:14px;opacity:0.95;}
-        .card .foot{margin-top:auto;display:flex;}
-
-        .small-btn{
-            padding:8px 12px;
-            border-radius:8px;
-            background:var(--green-700);
-            color:#fff;
-            font-weight:700;
-            text-decoration:none;
-            font-size:13px;
-        }
-
-        /* --- DONOR FEED STYLES --- */
-        .feed-section{
-            margin-top:40px;
-            padding-top:20px;
-            border-top:1px solid #d3f3e1;
-        }
-        .feed-section h2{
-            font-size:24px;
-            color:var(--green-900);
-            margin-bottom:20px;
-        }
-        .feed-container{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-            gap:20px;
-        }
-        .feed-post{
-            background:white;
-            border-radius:var(--radius);
-            padding:20px;
-            box-shadow:0 4px 15px rgba(8,40,20,0.05);
-        }
-        .post-header{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            margin-bottom:15px;
-        }
-        .post-avatar{
-            width:40px;height:40px;
-            border-radius:50%;
-            background:var(--orange-accent);
-            color:var(--green-900);
-            font-weight:700;
-            display:flex;justify-content:center;align-items:center;
-            font-size:16px;
-        }
-        .post-info strong{
-            color:var(--green-700);
-        }
-        .post-info small{
-            display:block;
-            color:#6b8b74;
-            font-size:12px;
-        }
-        .post-body p{
-            margin:0 0 15px 0;
-            font-size:15px;
-        }
-        .post-image img{
-            width:100%;
-            border-radius:10px;
-            margin-bottom:15px;
-        }
-        .post-actions{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border-top:1px solid #eee;
-            padding-top:10px;
-            font-size:14px;
-            color:var(--green-700);
-        }
-        .post-actions button{
-            background:none;
-            border:none;
-            color:var(--green-700);
-            cursor:pointer;
-            font-size:14px;
-            font-weight:600;
-            display:flex;
-            align-items:center;
-            gap:6px;
-        }
-        .post-actions button:hover{
-            opacity:0.7;
-        }
+  <style>
+    /* Colors from homepage */
+    :root{
+      --green-900:#114b2b;
+      --green-700:#185e34;
+      --green-500:#37a264;
+      --green-300:#9be0b5;
+      --accent:#1e7a43;
+      --muted:#f4f7f5;
+      --card-shadow:0 6px 20px rgba(8,40,20,0.08);
+      --radius:12px;
+      --max-width:1100px;
+      --orange-accent:#f99d3d;
+      --badge-bg:#ff4d4f;
+      --footer-bg: #114b2b;
+--footer-text: #eaf8ef;}
 
 
-        /* --- FOOTER STYLES --- (Retained) */
-        .footer-container{
-            margin-top:60px;background:var(--footer-bg);color:var(--footer-text);
-            border-radius:var(--radius);box-shadow:0 10px 30px rgba(8,40,20,0.15);
-        }
-        .footer-bottom-strip{
-            background:var(--orange-accent);
-            text-align:center;
-            padding:8px;
-            color:var(--green-900);
-            font-weight:600;
-            border-bottom-left-radius:12px;
-            border-bottom-right-radius:12px;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg, #eaf8ef 0%, #f7fff9 100%);
+      color:#08321b;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+    }
+
+    .wrap{ max-width:var(--max-width); margin:36px auto; padding:24px; }
+
+    /* Header (donor) */
+    header.main-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      position:relative;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--green-900); }
+    .logo-box{ width:52px; height:52px; border-radius:10px; overflow:hidden; box-shadow: var(--card-shadow); }
+    .logo-box img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .brand .title{
+      display:flex;
+      flex-direction:column;
+      line-height:1;
+    }
+    .brand .title .main{ font-weight:800; font-size:16px; }
+    .brand .title .sub{ font-size:12px; color:var(--green-700); margin-top:2px; }
+
+    .header-controls{ display:flex; align-items:center; gap:12px; }
+
+    .notif-btn{ position:relative; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; color:var(--green-900); font-size:18px; }
+    .notif-badge{ position:absolute; top:6px; right:6px; min-width:18px; height:18px; padding:0 5px; background:var(--badge-bg); color:white; font-size:12px; font-weight:800; border-radius:999px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.12); }
+
+    .user-initial{ width:42px; height:42px; border-radius:50%; background-color:var(--green-700); color:white; display:flex; justify-content:center; align-items:center; font-weight:700; font-size:18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+
+    /* Dropdown */
+    #profileMenu{ position:absolute; top:70px; right:24px; width:200px; background:white; border-radius:10px; box-shadow:0 12px 30px rgba(8,40,20,0.12); display:none; z-index:70; padding:8px 0; }
+    #profileMenu ul{ list-style:none; margin:0; padding:0; }
+    #profileMenu li{ padding:10px 14px; }
+    #profileMenu li:hover{ background:#f2f6f3; }
+    #profileMenu a{ text-decoration:none; color:var(--green-900); font-weight:700; display:block; }
+
+    /* Notif panel (small) */
+    #notifPanel{ position:absolute; top:70px; right:86px; width:320px; background:white; border-radius:10px; box-shadow:0 12px 30px rgba(8,40,20,0.12); padding:12px; display:none; z-index:65; }
+
+    /* HERO */
+    .hero{ margin-top:18px; background: linear-gradient(90deg,var(--green-300), #e7f7ee); border-radius: var(--radius); padding:36px 28px; display:flex; gap:24px; align-items:center; box-shadow: var(--card-shadow); }
+    .hero-left{ flex:1; }
+    .eyebrow{ display:inline-block; background: rgba(24,94,48,0.08); color:var(--green-700); padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px; margin-bottom:14px; }
+    h1#hero-heading{ margin:0 0 8px 0; font-size:56px; color:var(--green-900); line-height:1; font-weight:900; }
+    p.lead{ margin:10px 0 0 0; color:#204d34; opacity:0.95; font-size:16px; max-width:70%; }
+
+    /* ACTION CARDS - only Community Donor Feed + Leaderboard */
+    .donor-actions{ margin-top:28px; display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+    .action-card{ background:white; border-radius:var(--radius); padding:20px; box-shadow:var(--card-shadow); min-height:140px; display:flex; flex-direction:column; gap:12px; color:inherit; text-decoration:none; }
+    .action-card .icon{ width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; color:white; }
+    .action-card .icon.feed{ background: linear-gradient(135deg,#4aa77a,#2f9a6a); }
+    .action-card .icon.lb{ background: linear-gradient(135deg,#f0b45a,#f99d3d); }
+    .action-card h3{ margin:0; font-size:18px; color:var(--green-900); }
+    .action-card p{ margin:0; color:#2f5c45; font-size:14px; }
+    .open-btn{ margin-top:auto; display:inline-block; padding:9px 14px; background:var(--green-700); color:white; border-radius:8px; text-decoration:none; font-weight:700; }
+
+    .donation-cta {
+  width: 100%;
+  max-width: 650px;
+  margin: 30px auto;
+  padding: 30px;
+  background: linear-gradient(135deg, #e9fff3, #d4f7e8);
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.08);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.donation-cta:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 18px 35px rgba(0, 0, 0, 0.12);
+}
+
+.donation-cta h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #145c39;
+  margin-bottom: 8px;
+}
+
+.donation-cta p {
+  font-size: 15px;
+  color: #316d52;
+  margin-bottom: 22px;
+}
+
+.donation-btn {
+  display: inline-block;
+  padding: 14px 28px;
+  background: #0b683b;
+  color: white;
+  border-radius: 50px;
+  font-size: 17px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .3s ease, transform .25s ease;
+  box-shadow: 0px 6px 18px rgba(11,104,59,0.22);
+}
+
+.donation-btn:hover {
+  background: #084c2b;
+  transform: scale(1.06);
+}
+
+@media (max-width: 600px) {
+  .donation-cta {
+    padding: 22px;
+  }
+  .donation-cta h2 {
+    font-size: 20px;
+  }
+  .donation-btn {
+    width: 90%;
+    font-size: 16px;
+  }
+}
+
+
+    /* Latest Donor Activity - KEEP EXACTLY AS YOUR UPLOADED FILE */
+    .feed-section{ margin-top:40px; padding-top:20px; border-top:1px solid #e7f7ee; }
+    .feed-section h2{ font-size:22px; color:var(--green-900); margin-bottom:18px; }
+    .feed-container{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
+    .feed-post{ background:white; border-radius:var(--radius); padding:18px; box-shadow:0 6px 18px rgba(8,40,20,0.06); }
+    .post-header{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .post-avatar{ width:40px;height:40px;border-radius:50%; background:var(--orange-accent); color:var(--green-900); display:flex;align-items:center;justify-content:center;font-weight:700; }
+    .post-info strong{ color:var(--green-700); }
+    .post-info small{ display:block; color:#6b8b74; font-size:12px; }
+    .post-body p{ margin:0 0 12px 0; font-size:15px; color:#234b36; }
+    .post-actions{ display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:10px; font-size:14px; color:var(--green-700); }
+    .post-actions button{ background:none; border:none; color:var(--green-700); cursor:pointer; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; }
+    .post-actions button:hover{ opacity:0.85; }
+
+    /* Footer (unchanged style token) */
+    .footer-container{ margin-top:60px; background: var(--orange-accent); color: var(--green-900); border-radius: var(--radius); text-align:center; padding:12px; font-weight:700; }
+
+    @media(max-width:900px){
+      #notifPanel{ right:8px; left:8px; top:76px; width:auto; }
+      .hero{ flex-direction:column; text-align:center; padding:30px 18px; }
+      .hero-heading h1{
+         font-size:30px; 
         }
 
-        /* --- MEDIA QUERIES --- (Retained) */
-        @media(max-width:900px){
-            #notifPanel{ right:8px; left:8px; top:72px; width:auto; }
-            .hero{flex-direction:column; text-align:center;}
-            .donor-actions{ grid-template-columns:1fr; }
+      .donor-actions{ grid-template-columns:1fr; }
+      .feed-container{ grid-template-columns:1fr; }
+    }
+
+    .notif-badge.hidden { display:none; }
+
+    hero-heading h1{
+         font-size:30px; 
         }
-        @media(max-width:600px){
-            .donor-actions{ grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
-        }.footer-container{
+    /* FOOTER */
+    .footer-container{
       margin-top:60px;
       background: var(--footer-bg);
       color: var(--footer-text);
@@ -457,228 +340,101 @@ $feedPosts = [
       border-bottom-left-radius:var(--radius);
       border-bottom-right-radius:var(--radius);
     }
-
-    </style>
+  </style>
 </head>
-
 <body>
-    <div class="wrap">
+  <div class="wrap">
 
-        <header class="main-header">
+    <!-- HEADER: donor header restored -->
+    <header class="main-header">
+      <a class="brand" href="#">
+        <div class="logo-box">
+          <img src="images/circle-logo.png" alt="Smart Aid Logo">
+        </div>
+        <div class="title">
+          <div class="main">Smart Aid</div>
+          <div class="sub">real-time community donation platform</div>
+        </div>
+      </a>
 
-            <a class="brand" href="#">
-                <div class="logo">
-                    <img src="circle-logo.png" alt="logo">
-                </div>
-                <div>
-                    <div style="font-weight:800;font-size:18px">Smart Aid</div>
-                    <div style="font-size:12px;color:var(--green-700);margin-top:2px">
-                        real-time community donation platform
-                    </div>
-                </div>
-            </a>
+      <div class="header-controls">
+        <button id="notifBtn" class="notif-btn" aria-haspopup="true" aria-expanded="false" title="Notifications">
+  🔔
+  <span id="notifBadge" class="notif-badge"><?php echo ($unread_count > 99 ? '99+' : (int)$unread_count); ?></span>
+</button>
 
-            <div class="right-nav">
-                <a href="leaderboard.html">Leaderboard 🏆</a>
+        <div id="userInitial" class="user-initial" title="Open profile menu">
+    <?php echo $initial; ?>
+</div>
 
-                <button id="notifBtn" class="notif-btn" aria-haspopup="true" aria-expanded="false" title="Notifications">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
+      </div>
 
-                    <?php if (!empty($_SESSION['notifications_unread'])): ?>
-                        <span class="notif-badge" id="notifBadge"><?php echo (int)$_SESSION['notifications_unread']; ?></span>
-                    <?php endif; ?>
-                </button>
+      <!-- Notifications panel (hidden by default) -->
+      <div id="notifPanel" role="dialog" aria-hidden="true">
+        <h4 style="margin:0 0 8px 0;color:var(--green-900)">Notifications</h4>
+<div style="font-size:14px;color:#234b36">
+  <a href="donor_notifications.php" style="color:#1d7940; font-weight:600;">View Notifications</a>
+</div>
+      </div>
 
-                <div id="notifPanel" role="dialog" aria-hidden="true">
-                    <h4>Notifications</h4>
-                    <?php if (!empty($_SESSION['notifications_list'])): ?>
-                        <?php foreach ($_SESSION['notifications_list'] as $n): ?>
-                            <div class="notif-item">
-                                <div class="text"><?php echo htmlspecialchars($n['text']); ?></div>
-                                <div class="time"><?php echo htmlspecialchars($n['time']); ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                        <div style="margin-top:10px;text-align:center;">
-                            <a href="#" onclick="clearNotifications();return false;" class="small-btn" style="padding:8px 10px;font-size:13px;">Mark all read</a>
-                        </div>
-                    <?php else: ?>
-                        <div class="notif-item"><div class="text muted">No notifications</div></div>
-                    <?php endif; ?>
-                </div>
+      <!-- Profile dropdown -->
+      <div id="profileMenu" aria-hidden="true">
+        <ul>
+          <li><a href="donor_profile.php">View Profile</a></li>
+          <li><a href="my_donation.php">My Donations</a></li>
+          <li><a href="donor-settings.php">Settings</a></li>
+          <li><a href="donor_set_location.php" class="btn-location">Set / Update My Location</a></li>
+          <li style="border-top:1px solid #f1f6f3;margin-top:6px;padding-top:8px;"><a href="logout.php">Log Out</a></li>
+        </ul>
+      </div>
+    </header>
 
-                <div id="userInitial" class="user-initial"></div>
+    <!-- HERO -->
+    <main>
+      <section class="hero" aria-labelledby="hero-heading">
+        <div class="hero-left">
+          <span class="eyebrow">Community • Real-time • Local</span>
+          <h1 class="hero-heading" id="hero-heading">Welcome, <?php echo $userName; ?></h1>
+          <p class="lead">Thank you for your generosity — this is your place to see recent community donations and updates.</p>
+        </div>
+      </section>
 
-                <div id="profileMenu">
-                    <ul>
-                        <li><a href="view-profile.html">View Profile</a></li>
-                        <li><a href="my_donations.php">My Donations</a></li>
-                        <li><a href="donor-settings.html">Settings</a></li>
-                        <li class="divider"></li>
-                        <li><a href="logout.php">Sign Out</a></li>
-                    </ul>
-                </div>
-            </div>
+      <!-- ACTION CARDS -->
+      <section class="donor-actions" aria-label="Quick actions">
+        <a class="action-card" href="feed.php?home=donor_homepage.php">
+          <div class="icon feed">💬</div>
+          <h3>Community Feed</h3>
+          <p>See what other donors in the community are contributing.</p>
+          <span class="open-btn">Open Feed</span>
+        </a>
 
-        </header>
+        <a class="action-card" href="leaderboard.php">
+          <div class="icon lb">🏆</div>
+          <h3>Leaderboard</h3>
+          <p>Check your ranking based on contributions.</p>
+          <span class="open-btn">Open Leaderboard</span>
+        </a>
+      </section>
 
-        <main>
-            <section class="hero">
-                <div class="hero-left">
-                    <span class="eyebrow">Welcome <?php echo htmlspecialchars($userName); ?></span>
-                    <h1>Share your generosity — Inspire our Community 💚</h1>
-                    <p class="lead">
-                        Contribute extra food, clothes, or other resources to those who need it most. See and share the impact of your actions!
-                    </p>
-                    <a href="community_feed.php" class="small-btn" style="background:#fff; color:var(--green-700); font-size:14px; padding:10px 18px;">View Donor Feed →</a>
-                </div>
-            </section>
+          <!-- sample CTA post-card -->
+          <!-- Improved Post Donation CTA Card -->
+<div class="donation-cta">
+  <h2>Ready to Make an Impact?</h2>
+  <p>Your contribution can help someone today. Share what you can offer.</p>
 
-            <section class="donor-actions">
+  <a href="donor_post.php" class="donation-btn">
+    Post a New Donation
+  </a>
+</div>
 
-                <a class="card" href="donor_impact.php">
-                    <div class="icon impact">📈</div>
-                    <h3>View Your Impact</h3>
-                    <p>See personalized statistics: items saved, people helped, and environmental impact.</p>
-                    <div class="foot">
-                        <span class="small-btn" style="background:var(--green-700);">View Stats</span>
-                    </div>
-                </a>
-                
-                <a class="card" href="community_feed.php">
-                    <div class="icon feed">💬</div>
-                    <h3>Community Donor Feed</h3>
-                    <p>Share your donations and see what other amazing donors are contributing!</p>
-                    <div class="foot">
-                        <span class="small-btn" style="background:var(--icon-feed);">Join Feed</span>
-                    </div>
-                </a>
+        </div>
+      </section>
+    </main>
 
-                <a class="card" href="my_donations.php">
-                    <div class="icon history">🧾</div>
-                    <h3>Donation History</h3>
-                    <p>Review all your past and completed contributions to the community.</p>
-                    <div class="foot">
-                        <span class="small-btn" style="background:var(--orange-accent); color:var(--green-900);">View History</span>
-                    </div>
-                </a>
+  </div>
 
-                <a class="card" href="pickup_status.php">
-                    <div class="icon status">🚚</div>
-                    <h3>Check Pickup Status</h3>
-                    <p>Track the live status of your pending donations, from confirmation to delivery.</p>
-                    <div class="foot">
-                        <span class="small-btn" style="background:var(--blue-accent);">Track Status</span>
-                    </div>
-                </a>
-
-            </section>
-
-            <section class="feed-section">
-                <h2>Latest Donor Activity Feed</h2>
-                <div class="feed-container">
-                    
-                    <?php foreach ($feedPosts as $post): ?>
-                        <div class="feed-post">
-                            <div class="post-header">
-                                <div class="post-avatar"><?php echo htmlspecialchars($post['user'][0]); ?></div>
-                                <div class="post-info">
-                                    <strong><?php echo htmlspecialchars($post['user']); ?></strong>
-                                    <small><?php echo htmlspecialchars($post['time']); ?></small>
-                                </div>
-                            </div>
-                            <?php if (!empty($post['image'])): ?>
-                                <div class="post-image">
-                                    
-                                </div>
-                            <?php endif; ?>
-                            <div class="post-body">
-                                <p><?php echo htmlspecialchars($post['text']); ?></p>
-                            </div>
-                            <div class="post-actions">
-                                <div>
-                                    <button onclick="alert('Like clicked!');">👍 Like (<?php echo $post['likes']; ?>)</button>
-                                </div>
-                                <a href="#" style="text-decoration:none; color:inherit;">
-                                    Share Your Own Post!
-                                </a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                    
-                    <div class="feed-post" style="text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:220px;">
-                         <a href="post_donation.php" class="small-btn" style="padding:12px 25px; font-size:16px; background:var(--green-500);">
-                            <span style="font-size:24px; margin-right:5px;">✍️</span> Post a New Donation
-                         </a>
-                         <p style="margin-top:15px; font-size:14px;">Let the community know what you gave!</p>
-                    </div>
-
-                </div>
-            </section>
-
-
-        </main>
-
-    </div>
-
-   
-
-    <script>
-        const userInitial = document.getElementById("userInitial");
-        const menu = document.getElementById("profileMenu");
-        const notifBtn = document.getElementById("notifBtn");
-        const notifPanel = document.getElementById("notifPanel");
-        const notifBadge = document.getElementById("notifBadge");
-
-        userInitial.textContent = "<?php echo $initial; ?>";
-
-        // Toggle Profile Menu
-        userInitial.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const visible = menu.style.display === "block";
-            menu.style.display = visible ? "none" : "block";
-            notifPanel.style.display = "none"; // Close notifications if open
-        });
-
-        // Toggle Notification Panel
-        notifBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const visible = notifPanel.style.display === "block";
-            menu.style.display = "none"; // Close profile menu if open
-            notifPanel.style.display = visible ? "none" : "block";
-            notifBtn.setAttribute("aria-expanded", !visible);
-            notifPanel.setAttribute("aria-hidden", visible);
-        });
-
-        // Close on outside click
-        document.addEventListener("click", (e) => {
-            if (!userInitial.contains(e.target) && !menu.contains(e.target)) {
-                menu.style.display = "none";
-            }
-            if (!notifBtn.contains(e.target) && !notifPanel.contains(e.target)) {
-                notifPanel.style.display = "none";
-            }
-        });
-
-        // Close on Escape key
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-                menu.style.display = "none";
-                notifPanel.style.display = "none";
-            }
-        });
-
-        // Function to mark notifications as read (simulated)
-        function clearNotifications(){
-            notifPanel.style.display = "none";
-            if (notifBadge) notifBadge.style.display = "none";
-            // In a real application, you would send an AJAX request here to update the session/database:
-            // fetch('clear_notifications.php', { method: 'POST' }).catch(()=>{});
-            console.log("Notifications marked as read."); 
-        }
-    </script><footer class="footer-container">
+  <!-- FOOTER -->
+<footer class="footer-container">
 
   <div class="footer-content">
 
@@ -694,10 +450,9 @@ $feedPosts = [
       <p>Empowering communities with a real-time platform to connect surplus food with those in need, reducing waste and fighting hunger.</p>
 
       <div class="social-icons">
-        <a href="#">X</a>
-        <a href="#">in</a>
-        <a href="#">f</a>
-        <a href="#">o</a>
+        <a href="https://x.com/SmartAid2025"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="https://www.facebook.com/profile.php?id=61584193043021"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com/smartaid_donation/"><i class="fa-brands fa-instagram"></i></a>
       </div>
 
       <a class="back-to-top-btn" href="#top">↑ Back to Top</a>
@@ -706,24 +461,97 @@ $feedPosts = [
     <!-- CENTER LINKS -->
     <div class="footer-links">
       <h5>Site Map</h5>
-      <ul>
-        <li><a href="#">Homepage</a></li>
-        <li><a href="#">Leaderboard</a></li>
-        <li><a href="#">How It Works</a></li>
-        
-        <li><a href="#">Contact Us</a></li>
-      </ul>
+                <ul>
+                    <!-- FIX 5: Dynamic Links -->
+                    <li><a href="<?php echo $dashboard_link; ?>">Homepage</a></li>
+                    <li><a href="leaderboard.php?home=donor_homepage.php">Leaderboard</a></li>
+                    <li><a href="help.php?home=donor_homepage.php">Help</a></li>
+                    <li><a href="contact_us.php?home=donor_homepage.php">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
     </div>
 
- 
+    <div class="footer-bottom-strip">
+        Copyright © 2025,SmartAid. All Rights Reserved.
+    </div>
+  </footer>
 
-  </div>
+  <script>
 
-  <div class="footer-bottom-strip">
-    Copyright © 2025, SmartAid.
-  </div>
+    (function(){
+  const badge = document.getElementById('notifBadge');
+  if (!badge) return;
 
-</footer>
+  const pollIntervalMs = 10000; // 10s
+  async function updateBadge() {
+    try {
+      const resp = await fetch(window.location.pathname + '?notif_count=1', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('Network response not ok');
+      const j = await resp.json();
+      if (j && j.success) {
+        const n = parseInt(j.unread || 0, 10);
+        if (n > 0) {
+          badge.classList.remove('hidden');
+          badge.textContent = (n > 99 ? '99+' : String(n));
+        } else {
+          badge.classList.add('hidden');
+          badge.textContent = '0';
+        }
+      }
+    } catch (e) {
+      // fail silently; keep existing badge
+      console.error('Notif poll failed', e);
+    }
+  }
 
+  // initial run (page already has server value, but refresh to get latest)
+  setTimeout(updateBadge, 500);
+  setInterval(updateBadge, pollIntervalMs);
+})();
+
+
+    // profile dropdown toggle
+    const userInitial = document.getElementById('userInitial');
+    const profileMenu = document.getElementById('profileMenu');
+    const notifBtn = document.getElementById('notifBtn');
+    const notifPanel = document.getElementById('notifPanel');
+
+    if (userInitial) {
+      userInitial.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileMenu.style.display = profileMenu.style.display === 'block' ? 'none' : 'block';
+        if (notifPanel) notifPanel.style.display = 'none';
+      });
+    }
+
+    if (notifBtn) {
+      notifBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (notifPanel) {
+          notifPanel.style.display = notifPanel.style.display === 'block' ? 'none' : 'block';
+        }
+        if (profileMenu) profileMenu.style.display = 'none';
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (profileMenu && !profileMenu.contains(e.target) && userInitial && !userInitial.contains(e.target)) {
+        profileMenu.style.display = 'none';
+      }
+      if (notifPanel && notifBtn && !notifBtn.contains(e.target) && !notifPanel.contains(e.target)) {
+        notifPanel.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (profileMenu) profileMenu.style.display = 'none';
+        if (notifPanel) notifPanel.style.display = 'none';
+      }
+    });
+    
+  </script>
+  
 </body>
 </html>

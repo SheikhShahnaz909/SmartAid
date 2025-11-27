@@ -1,6 +1,47 @@
 <?php
 session_start();
 session_destroy();
-header("Location: homepage.html");
+header("Location: homepage.php");
 exit();
 ?>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Logged Out</title>
+<style>
+body{
+    margin:0;
+    background:#eaf8ef;
+    font-family:Inter,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.box{
+    background:white;
+    padding:40px;
+    border-radius:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.1);
+    text-align:center;
+}
+h2{color:#185e34;}
+a{
+    display:inline-block;
+    margin-top:20px;
+    padding:10px 20px;
+    background:#185e34;
+    color:white;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:700;
+}
+</style>
+</head>
+<body>
+<div class="box">
+    <h2>You have been logged out</h2>
+    <a href="homepage.php">Return to Home</a>
+</div>
+</body>
+</html>

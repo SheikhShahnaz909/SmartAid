@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Donor ⇄ Reporter — Free Routing (≤5 km)</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    html,body,#app{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+    #app{display:grid;grid-template-columns:340px 1fr;grid-template-rows:auto 1fr}
+    header{grid-column:1/-1;padding:12px 16px;background:#f7f7f7;border-bottom:1px solid #e6e6e6}
+    header h1{margin:0;font-size:16px}
+    .panel{padding:10px;border-right:1px solid #eee; background:#fafafa; overflow:auto}
+    .col{padding:10px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    input,button,select,textarea{padding:8px;border-radius:6px;border:1px solid #ccc;font-size:14px}
+    label{display:block;margin-top:8px;font-weight:600;font-size:13px}
+    button.btn{background:#0b74de;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+    button.btn-ghost{background:#fff;border:1px solid #ccc;color:#333}
+    #map{position:relative;height:calc(100vh - 70px)}
+    .small{font-size:13px;color:#444}
+    .directions{max-height:220px;overflow:auto;border:1px solid #eee;padding:8px;margin-top:8px;background:#fff}
+    .info{margin-top:8px;padding:8px;background:#fff;border:1px solid #eee}
+    .role-title{background:#fff;padding:8px;border-radius:6px;margin-bottom:6px;border:1px solid #eee}
+    .hint{font-size:12px;color:#666;margin-top:6px}
+    .ok { color: green; font-weight:600; }
+    .warn { color: #a66; font-weight:600; }
+    .muted { color:#666; font-size:13px; }
+    .flexrow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .latlng { width:150px; }
+    /* ensure sidebar sits above map */
+    .panel { position: relative; z-index: 9999; }
+    .map-wrap { z-index: 0; position:relative; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Donor ⇄ Reporter — Free Routing (Leaflet + OSRM + Nominatim)</h1>
+      <p class="muted">Donor & Reporter inputs: GPS / click-on-map / address / lat-lng. Shows straight-line & route distance, and turn-by-turn directions. Free — no API keys.</p>
+    </header>
+
+    <aside class="panel" style="width:340px">
+      <div class="role-title">Donor (giver)</div>
+
+      <div>
+        <div class="controls">
+          <button id="donorUseLoc" class="btn">Use my device location (GPS)</button>
+          <button id="donorPickMap" class="btn-ghost">Pick on map</button>
+        </div>
+
+        <label>Or enter donor address (press Geocode)</label>
+        <div class="flexrow">
+          <input id="donorAddress" placeholder="e.g. MG Road, Bangalore" style="flex:1" />
+          <button id="donorGeocode" class="btn-ghost">Geocode</button>
+        </div>
+
+        <label>Or enter donor coordinates</label>
+        <div class="flexrow">
+          <input id="donorLat" class="latlng" placeholder="lat" />
+          <input id="donorLng" class="latlng" placeholder="lng" />
+          <button id="donorCoordsBtn" class="btn-ghost">Use coords</button>
+        </div>
+
+        <div class="info" id="donorInfo">No donor set.</div>
+      </div>
+
+      <hr/>
+
+      <div class="role-title">Reporter (reports person in need)</div>
+
+      <div>
+        <div class="controls">
+          <button id="repPickMap" class="btn-ghost">Pick on map</button>
+          <button id="repUseLoc" class="btn-ghost">Use device (if reporter)</button>
+        </div>
+
+        <label>Or enter reported address</label>
+        <div class="flexrow">
+          <input id="repAddress" placeholder="e.g. Near railway station" style="flex:1" />
+          <button id="repGeocode" class="btn-ghost">Geocode</button>
+        </div>
+
+        <label>Or enter reporter coordinates</label>
+        <div class="flexrow">
+          <input id="repLat" class="latlng" placeholder="lat" />
+          <input id="repLng" class="latlng" placeholder="lng" />
+          <button id="repCoordsBtn" class="btn-ghost">Use coords</button>
+        </div>
+
+        <div class="info" id="repInfo">No reported person location set.</div>
+      </div>
+
+      <hr/>
+
+      <div>
+        <label>Routing & results</label>
+        <div class="controls">
+          <select id="travelMode">
+            <option value="driving">Driving</option>
+            <option value="walking">Walking</option>
+            <option value="cycling">Cycling</option>
+          </select>
+          <button id="calcRoute" class="btn">Calculate route</button>
+          <button id="clearRoute" class="btn-ghost">Clear</button>
+        </div>
+
+        <div class="info" id="routeSummary">Route not calculated.</div>
+        <div class="directions" id="directionsList">Directions will appear here.</div>
+        <div class="hint">Note: OSRM (router.project-osrm.org) is used for routing free of charge. Nominatim (OpenStreetMap) is for geocoding.</div>
+      </div>
+    </aside>
+
+    <div class="map-wrap">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+  // ---------- Config & helpers ----------
+  const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=';
+  // OSRM demo server (no API key). Modes: driving, cycling, walking
+  const OSRM_BASE = 'https://router.project-osrm.org/route/v1/';
+
+  // map init
+  const map = L.map('map', {center:[20,0], zoom:2});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution: '&copy; OpenStreetMap contributors'}).addTo(map);
+
+  // markers & route
+  let donorMarker = null, repMarker = null, routeLayer = null;
+
+  // simple icons
+  const donorIcon = L.icon({ iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-green.png', iconSize:[25,41], iconAnchor:[12,41]});
+  const repIcon   = L.icon({ iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-red.png', iconSize:[25,41], iconAnchor:[12,41]});
+
+  // DOM
+  const donorUseLoc = document.getElementById('donorUseLoc');
+  const donorPickMap = document.getElementById('donorPickMap');
+  const donorAddress = document.getElementById('donorAddress');
+  const donorGeocode = document.getElementById('donorGeocode');
+  const donorLat = document.getElementById('donorLat');
+  const donorLng = document.getElementById('donorLng');
+  const donorCoordsBtn = document.getElementById('donorCoordsBtn');
+  const donorInfo = document.getElementById('donorInfo');
+
+  const repPickMap = document.getElementById('repPickMap');
+  const repUseLoc = document.getElementById('repUseLoc');
+  const repAddress = document.getElementById('repAddress');
+  const repGeocode = document.getElementById('repGeocode');
+  const repLat = document.getElementById('repLat');
+  const repLng = document.getElementById('repLng');
+  const repCoordsBtn = document.getElementById('repCoordsBtn');
+  const repInfo = document.getElementById('repInfo');
+
+  const travelMode = document.getElementById('travelMode');
+  const calcRoute = document.getElementById('calcRoute');
+  const clearRoute = document.getElementById('clearRoute');
+  const routeSummary = document.getElementById('routeSummary');
+  const directionsList = document.getElementById('directionsList');
+
+  let pickMode = null; // 'donor' or 'rep' when clicking on map to pick
+
+  // ---------- utility functions ----------
+  function setDonor(lat,lng,source='manual'){
+    if(donorMarker) donorMarker.remove();
+    donorMarker = L.marker([lat,lng], {icon: donorIcon}).addTo(map).bindPopup('Donor location').openPopup();
+    donorInfo.innerHTML = `Donor set: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b> (via ${source})`;
+    donorLat.value = lat; donorLng.value = lng;
+    fitToBoth();
+  }
+  function setRep(lat,lng,source='manual'){
+    if(repMarker) repMarker.remove();
+    repMarker = L.marker([lat,lng], {icon: repIcon}).addTo(map).bindPopup('Reported person').openPopup();
+    repInfo.innerHTML = `Reported person: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b> (via ${source})`;
+    repLat.value = lat; repLng.value = lng;
+    fitToBoth();
+  }
+  function fitToBoth(){
+    const pts = [];
+    if(donorMarker) pts.push(donorMarker.getLatLng());
+    if(repMarker) pts.push(repMarker.getLatLng());
+    if(pts.length===1) map.setView(pts[0], 13);
+    if(pts.length===2) map.fitBounds(L.latLngBounds(pts), {padding:[40,40]});
+  }
+
+  function haversineKm(a,b){
+    const R=6371;
+    const dLat = (b.lat-a.lat)*Math.PI/180;
+    const dLon = (b.lng-a.lng)*Math.PI/180;
+    const la = a.lat*Math.PI/180, lb = b.lat*Math.PI/180;
+    const aa = Math.sin(dLat/2)**2 + Math.cos(la)*Math.cos(lb)*Math.sin(dLon/2)**2;
+    const c = 2*Math.atan2(Math.sqrt(aa), Math.sqrt(1-aa));
+    return R*c;
+  }
+
+  // ---------- map click picking ----------
+  map.on('click', (e)=>{
+    if(pickMode==='donor'){
+      setDonor(e.latlng.lat, e.latlng.lng, 'map-click');
+      pickMode = null;
+      donorPickMap.textContent = 'Pick on map';
+      map.getContainer().style.cursor = '';
+    } else if(pickMode==='rep'){
+      setRep(e.latlng.lat, e.latlng.lng, 'map-click');
+      pickMode = null;
+      repPickMap.textContent = 'Pick on map';
+      map.getContainer().style.cursor = '';
+    }
+  });
+
+  donorPickMap.addEventListener('click', ()=>{
+    pickMode = pickMode==='donor' ? null : 'donor';
+    donorPickMap.textContent = pickMode==='donor' ? 'Click map to set donor (Esc to cancel)' : 'Pick on map';
+    map.getContainer().style.cursor = pickMode?'crosshair':'';
+  });
+
+  repPickMap.addEventListener('click', ()=>{
+    pickMode = pickMode==='rep' ? null : 'rep';
+    repPickMap.textContent = pickMode==='rep' ? 'Click map to set reported person (Esc to cancel)' : 'Pick on map';
+    map.getContainer().style.cursor = pickMode?'crosshair':'';
+  });
+
+  // allow Esc to cancel pick
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ pickMode=null; donorPickMap.textContent='Pick on map'; repPickMap.textContent='Pick on map'; map.getContainer().style.cursor=''; }});
+
+  // ---------- geocode helpers (Nominatim) ----------
+  async function geocodeAddress(q){
+    if(!q || !q.trim()) return null;
+    const url = NOMINATIM_BASE + encodeURIComponent(q);
+    try{
+      const r = await fetch(url, {headers:{'Accept':'application/json'}});
+      const j = await r.json();
+      if(j && j.length>0) return {lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon), display_name: j[0].display_name};
+    }catch(e){ console.error('geocode err', e); }
+    return null;
+  }
+
+  donorGeocode.addEventListener('click', async ()=>{
+    const q = donorAddress.value.trim();
+    if(!q) return alert('Enter donor address to geocode');
+    donorGeocode.disabled = true;
+    donorGeocode.textContent = 'Searching...';
+    const r = await geocodeAddress(q);
+    donorGeocode.disabled = false;
+    donorGeocode.textContent = 'Geocode';
+    if(!r) return alert('Address not found.');
+    setDonor(r.lat, r.lon, 'geocode');
+  });
+
+  repGeocode.addEventListener('click', async ()=>{
+    const q = repAddress.value.trim();
+    if(!q) return alert('Enter reported address to geocode');
+    repGeocode.disabled = true;
+    repGeocode.textContent = 'Searching...';
+    const r = await geocodeAddress(q);
+    repGeocode.disabled = false;
+    repGeocode.textContent = 'Geocode';
+    if(!r) return alert('Address not found.');
+    setRep(r.lat, r.lon, 'geocode');
+  });
+
+  // ---------- coords buttons ----------
+  donorCoordsBtn.addEventListener('click', ()=>{
+    const lat = parseFloat(donorLat.value), lng = parseFloat(donorLng.value);
+    if(Number.isFinite(lat) && Number.isFinite(lng)) setDonor(lat,lng,'coords');
+    else alert('Enter valid donor lat & lng numbers.');
+  });
+  repCoordsBtn.addEventListener('click', ()=>{
+    const lat = parseFloat(repLat.value), lng = parseFloat(repLng.value);
+    if(Number.isFinite(lat) && Number.isFinite(lng)) setRep(lat,lng,'coords');
+    else alert('Enter valid reporter lat & lng numbers.');
+  });
+
+  // ---------- device geolocation ----------
+  donorUseLoc.addEventListener('click', ()=>{
+    if(!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+    donorUseLoc.disabled = true; donorUseLoc.textContent = 'Getting...';
+    navigator.geolocation.getCurrentPosition(p=>{
+      donorUseLoc.disabled = false; donorUseLoc.textContent = 'Use my device location (GPS)';
+      setDonor(p.coords.latitude, p.coords.longitude, 'device');
+    }, e=>{
+      donorUseLoc.disabled = false; donorUseLoc.textContent = 'Use my device location (GPS)';
+      alert('Could not get device location: '+e.message);
+      console.error(e);
+    }, {enableHighAccuracy:true, timeout:15000});
+  });
+
+  repUseLoc.addEventListener('click', ()=>{
+    if(!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+    repUseLoc.disabled = true; repUseLoc.textContent = 'Getting...';
+    navigator.geolocation.getCurrentPosition(p=>{
+      repUseLoc.disabled = false; repUseLoc.textContent = 'Use device (if reporter)';
+      setRep(p.coords.latitude, p.coords.longitude, 'device');
+    }, e=>{
+      repUseLoc.disabled = false; repUseLoc.textContent = 'Use device (if reporter)';
+      alert('Could not get device location: '+e.message);
+      console.error(e);
+    }, {enableHighAccuracy:true, timeout:15000});
+  });
+
+  // ---------- routing with OSRM ----------
+  async function calcRouteOSRM(lat1, lng1, lat2, lng2, mode='driving'){
+    // OSRM expects lon,lat pairs
+    const profile = mode || 'driving';
+    const coords = `${lng1},${lat1};${lng2},${lat2}`;
+    const url = `${OSRM_BASE}${profile}/${coords}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Routing request failed');
+    const j = await res.json();
+    if(!j || !j.routes || j.routes.length===0) throw new Error('No route found');
+    return j.routes[0];
+  }
+
+  // When both donor & rep exist, calculate route and show directions
+  calcRoute.addEventListener('click', async ()=>{
+    if(!donorMarker || !repMarker) return alert('Please set both donor and reported person locations first.');
+    const a = donorMarker.getLatLng(), b = repMarker.getLatLng();
+    const mode = travelMode.value; // driving/walking/cycling
+    routeSummary.innerHTML = 'Calculating route...';
+    directionsList.innerHTML = '';
+    try{
+      const route = await calcRouteOSRM(a.lat,a.lng,b.lat,b.lng, mode);
+      // remove existing route
+      if(routeLayer) routeLayer.remove();
+      // draw route geojson
+      routeLayer = L.geoJSON(route.geometry, {style:{color:'#0b74de', weight:5, opacity:0.85}}).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), {padding:[40,40]});
+
+      // summary
+      const dist_km = (route.distance/1000).toFixed(2);
+      const dur_min = Math.round(route.duration/60);
+      routeSummary.innerHTML = `Route: <b>${dist_km} km</b>, ETA: <b>${dur_min} min</b> (mode: ${mode})`;
+
+      // show steps
+      const steps = [];
+      route.legs.forEach((leg, i) => {
+        leg.steps.forEach(s => {
+          steps.push({
+            maneuver: s.maneuver.instruction || s.maneuver.type + (s.maneuver.modifier ? ' '+s.maneuver.modifier : ''),
+            distance: s.distance,
+            duration: s.duration,
+            name: s.name || ''
+          });
+        });
+      });
+
+      // render directions
+      directionsList.innerHTML = steps.map((s, idx)=> {
+        const dkm = (s.distance/1000).toFixed(3);
+        const dmin = Math.round(s.duration/60);
+        return `<div style="padding:6px;border-bottom:1px solid #f0f0f0"><b>Step ${idx+1}:</b> ${escapeHtml(s.maneuver)} ${s.name? (' — '+escapeHtml(s.name)) : ''}<div class="small"> ${dkm} km, ${dmin} min</div></div>`;
+      }).join('');
+
+      // Also show straight-line distance in summary
+      const straight = haversineKm(a,b).toFixed(3);
+      routeSummary.innerHTML += `<div class="muted">Straight-line: ${straight} km</div>`;
+
+    }catch(err){
+      console.error(err);
+      alert('Routing failed: '+err.message);
+      routeSummary.innerHTML = 'Routing failed.';
+    }
+  });
+
+  clearRoute.addEventListener('click', ()=>{
+    if(routeLayer) routeLayer.remove();
+    routeLayer = null;
+    routeSummary.innerHTML = 'Route cleared.';
+    directionsList.innerHTML = '';
+  });
+
+  // small HTML escape
+  function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Convenience: if both set, show basic straight-line distance immediately
+  const showBasic = ()=>{
+    if(donorMarker && repMarker){
+      const a = donorMarker.getLatLng(), b = repMarker.getLatLng();
+      const straight = haversineKm(a,b).toFixed(3);
+      routeSummary.innerHTML = `Straight-line distance: <b>${straight} km</b>. Click "Calculate route" for turn-by-turn directions.`;
+    }
+  };
+  // Observe marker changes by wrapping set functions
+  const originalSetDonor = setDonor;
+  const originalSetRep = setRep;
+  // override setDonor and setRep to also call showBasic (done above already)
+  // they already call fitToBoth; call showBasic using simple interval-based method
+  const maybeShowInterval = setInterval(()=>{ showBasic(); }, 800);
+
+  // debug helper for console
+  window.__appdebug = {
+    setDonor, setRep, calcRouteOSRM
+  };
+  </script>
+</body>
+</html>

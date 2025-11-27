@@ -34,12 +34,90 @@
     input[type=text],input[type=email],input[type=password],input[type=tel]{
       width:100%;padding:10px;border-radius:8px;border:none;font-size:15px;
     }
-    .log-in-btn{width:100%;padding:12px;border-radius:10px;border:none;background:var(--primary-green);color:#fff;font-weight:700;margin-top:12px;cursor:pointer}
-    .links{margin-top:12px;text-align:center}
+    .log-in-btn{width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      background:var(--primary-green);
+      color:#fff;
+      font-weight:700;
+      margin-top:12px;
+      cursor:pointer;
+    }
+    .links{
+      margin-top:12px;
+      text-align:center;
+    }
+
+    /* CORRECTED CSS for the Password Toggle */
+
+.password-container {
+    position: relative; 
+    
+}
+
+.password-container input {
+    /* Ensure input takes up the full width, leaving room for the icon */
+    padding-right: 45px !important;
+    width: 100%; /* Increased padding slightly for better spacing */
+}
+
+.toggle-password {
+    position: absolute;
+    top: 50%; /* Moves the top edge of the button halfway down the container */
+    left: 370px;
+    
+    /* CRITICAL FIX: Shifts the button up by half its own height to perfectly center it */
+    transform: translateY(-85%); 
+    
+    /* Styling */
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em; /* Slightly larger for better visual alignment */
+    padding: 0;
+    line-height: 0.5;
+    color: #666; 
+    z-index: 10;
+    display: flex; /* Ensure the content (the eye icon) is centered if using different text */
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* Allows translateY(-50%) to be more reliable */
+}
+
+.toggle-password:focus {
+    outline: none;
+}
+
+.toggle-password:hover{
+    background:none;
+}
     .error-message{display:none;background:rgba(255,0,0,0.35);padding:8px;border-radius:8px;margin-top:8px}
   </style>
 </head>
 <body>
+   <!-- BACK ARROW -->
+<a href="role_selection.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255,255,255,0.2);
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    backdrop-filter: blur(5px);
+    text-decoration: none;
+">
+    <span style="
+        font-size: 25px;
+        color: white;
+        font-weight: 900;
+    ">&larr;</span>
+</a>
+
   <div class="login-container">
     <div style="text-align:center">
       <div class="logo-img"><img src="images/circle-logo.png" alt="Smart Aid"></div>
@@ -63,11 +141,13 @@
         <input id="email" name="email" type="email" required placeholder="name@example.com">
       </div>
 
-      <div class="input-group">
+      <div class="password-container"> 
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" required placeholder="Min 8 chars, incl. capital, number, symbol">
-        <div id="password-error-box" class="error-message"></div>
-      </div>
+        <input type="password" id="password" name="password" required placeholder="Enter your password">
+        
+        <button type="button" id="togglePassword" class="toggle-password" aria-label="Toggle password visibility">
+            👁️
+        </button>
 
       <div class="input-group">
         <label for="phone">Phone Number</label>
@@ -148,6 +228,24 @@
         box.style.display = 'block';
       }
     })();
+    document.addEventListener('DOMContentLoaded', function () {
+        const passwordInput = document.getElementById('password');
+        const toggleButton = document.getElementById('togglePassword');
+
+        if (toggleButton && passwordInput) {
+            toggleButton.addEventListener('click', function () {
+                // Toggle the type attribute
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Change the icon visual
+                this.setAttribute('aria-label', type === 'password' ? 'Show password' : 'Hide password');
+                this.textContent = (type === 'password') ? '👁️' : '🙈'; 
+            });
+        }
+    });
+    
+    
   </script>
 </body>
 </html>
