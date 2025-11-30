@@ -1,7 +1,18 @@
 <?php
+
 // reporter_homepage.php
 
 session_start();
+
+/*
+  Fixed behavior:
+  - Keeps strict access control for reporters.
+  - Exposes a constant REPORTER_DASHBOARD which other reporter pages should use
+    for all "Back to Dashboard" links (so they point directly to the reporter homepage).
+  - All internal links that refer to the reporter dashboard use the constant.
+*/
+
+define('REPORTER_DASHBOARD', 'reporter_homepage.php');
 
 // 🔐 STRICT BUT SIMPLE ACCESS CONTROL: reporter only
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'reporter') {
@@ -15,7 +26,7 @@ $userName    = htmlspecialchars($rawUserName, ENT_QUOTES, 'UTF-8');
 $display_name = $userName . '!';
 
 $initial = strtoupper($userName[0] ?? 'R');
-$dashboard_link = 'reporter_homepage.php';
+$dashboard_link = REPORTER_DASHBOARD;
 ?>
 <!doctype html>
 <html lang="en">
@@ -309,7 +320,7 @@ $dashboard_link = 'reporter_homepage.php';
       </a>
 
       <nav class="main-nav">
-        <a href="help.php?home=reporter_homepage.php">Help</a>
+        <a href="help.php?home=<?php echo urlencode($dashboard_link); ?>">Help</a>
         <div class="user-menu">
           <div class="user-initial" id="userInitial" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdown">
             <?php echo htmlspecialchars($initial, ENT_QUOTES, 'UTF-8'); ?> 
@@ -351,7 +362,7 @@ $dashboard_link = 'reporter_homepage.php';
   </div>
   <p>See what other donors in the community are contributing.</p>
   <div class="foot">
-    <a class="small-btn" href="feed.php?home=reporter_homepage.php">View Feed</a>
+    <a class="small-btn" href="feed.php?home=<?php echo urlencode($dashboard_link); ?>">View Feed</a>
   </div>
 </article>
 
@@ -382,9 +393,9 @@ $dashboard_link = 'reporter_homepage.php';
       <h5>Site Map</h5>
       <ul>
         <li><a href="<?php echo $dashboard_link; ?>">Homepage</a></li>
-        <li><a href="leaderboard.php?home=reporter_homepage.php">Leaderboard</a></li>
-        <li><a href="help.php?home=reporter_homepage.php">Help</a></li>
-        <li><a href="contact_us.php?home=reporter_homepage.php">Contact Us</a></li>  
+        <li><a href="leaderboard.php?home=<?php echo urlencode($dashboard_link); ?>">Leaderboard</a></li>
+        <li><a href="help.php?home=<?php echo urlencode($dashboard_link); ?>">Help</a></li>
+        <li><a href="contact_us.php?home=<?php echo urlencode($dashboard_link); ?>">Contact Us</a></li>  
       </ul>
     </div>
   </div>
